@@ -233,8 +233,6 @@ class _Deque_const_iterator : public _Iterator_base12 {
 private:
     using _Size_type = typename _Mydeque::size_type;
 
-    static constexpr int _Block_size = _Mydeque::_Block_size;
-
 public:
     using iterator_category = random_access_iterator_tag;
 
@@ -244,7 +242,6 @@ public:
     using reference       = const value_type&;
 
     using _Mydeque_t = _Mydeque; // helper for expression evaluator
-    enum { _EEN_DS = _Block_size }; // helper for expression evaluator
     _Deque_const_iterator() noexcept : _Myoff(0) {
         _Setcont(nullptr);
     }
@@ -544,14 +541,15 @@ public:
 private:
     using _Map_difference_type = typename iterator_traits<_Mapptr>::difference_type;
 
-    static constexpr size_t _Bytes = sizeof(value_type);
-
 public:
-    static constexpr int _Block_size = _Bytes <= 1 ? 16
-                                     : _Bytes <= 2 ? 8
-                                     : _Bytes <= 4 ? 4
-                                     : _Bytes <= 8 ? 2
-                                                   : 1; // elements per block (a power of 2)
+    static constexpr int _Get_block_size() noexcept {
+        constexpr size_t _Bytes = sizeof(value_type);
+        return _Bytes <= 1 ? 16
+             : _Bytes <= 2 ? 8
+             : _Bytes <= 4 ? 4
+             : _Bytes <= 8 ? 2
+                           : 1; // elements per block (a power of 2)
+    }
 
     _Deque_val() noexcept : _Map(), _Mapsize(0), _Myoff(0), _Mysize(0) {}
 
@@ -569,24 +567,28 @@ public:
 
     _Map_difference_type _Getblock(size_type _Off) const noexcept {
         // NB: _Mapsize and _Block_size are guaranteed to be powers of 2
+        constexpr int _Block_size = _Get_block_size();
         return static_cast<_Map_difference_type>((_Off / _Block_size) & (_Mapsize - 1));
     }
 
     reference _Subscript(size_type _Off) noexcept {
-        const auto _Block     = _Getblock(_Off);
-        const auto _Block_off = static_cast<difference_type>(_Off % _Block_size);
+        constexpr int _Block_size = _Get_block_size();
+        const auto _Block         = _Getblock(_Off);
+        const auto _Block_off     = static_cast<difference_type>(_Off % _Block_size);
         return _Map[_Block][_Block_off];
     }
 
     const_reference _Subscript(size_type _Off) const noexcept {
-        const auto _Block     = _Getblock(_Off);
-        const auto _Block_off = static_cast<difference_type>(_Off % _Block_size);
+        constexpr int _Block_size = _Get_block_size();
+        const auto _Block         = _Getblock(_Off);
+        const auto _Block_off     = static_cast<difference_type>(_Off % _Block_size);
         return _Map[_Block][_Block_off];
     }
 
     value_type* _Address_subscript(size_type _Off) noexcept {
-        const auto _Block     = _Getblock(_Off);
-        const auto _Block_off = static_cast<difference_type>(_Off % _Block_size);
+        constexpr int _Block_size = _Get_block_size();
+        const auto _Block         = _Getblock(_Off);
+        const auto _Block_off     = static_cast<difference_type>(_Off % _Block_size);
         return _STD _Unfancy(_Map[_Block] + _Block_off);
     }
 
@@ -619,7 +621,6 @@ private:
             typename _Alty_traits::pointer, typename _Alty_traits::const_pointer, _Mapptr>>>;
 
     static constexpr int _Minimum_map_size = 8;
-    static constexpr int _Block_size       = _Scary_val::_Block_size;
 
 public:
     using allocator_type  = _Alloc;
@@ -638,7 +639,6 @@ public:
 
     using reverse_iterator       = _STD reverse_iterator<iterator>;
     using const_reverse_iterator = _STD reverse_iterator<const_iterator>;
-    enum { _EEN_DS = _Block_size }; // helper for expression evaluator
 
     deque() : _Mypair(_Zero_then_variadic_args_t{}) {
         _Get_data()._Alloc_proxy(static_cast<_Alproxy_ty>(_Getal()));
@@ -1012,6 +1012,7 @@ public:
 
         const auto _Mask = static_cast<size_type>(_Mapsize() - 1);
 
+        constexpr int _Block_size                 = _Scary_val::_Get_block_size();
         const auto _Unmasked_first_used_block_idx = static_cast<size_type>(_Myoff() / _Block_size);
         const auto _First_used_block_idx          = static_cast<size_type>(_Unmasked_first_used_block_idx & _Mask);
 
@@ -1142,6 +1143,7 @@ public:
 private:
     template <class... _Tys>
     void _Emplace_back_internal(_Tys&&... _Vals) {
+        constexpr int _Block_size = _Scary_val::_Get_block_size();
         if ((_Myoff() + _Mysize()) % _Block_size == 0 && _Mapsize() <= (_Mysize() + _Block_size) / _Block_size) {
             _Growmap(1);
         }
@@ -1159,6 +1161,7 @@ private:
 
     template <class... _Tys>
     void _Emplace_front_internal(_Tys&&... _Vals) {
+        constexpr int _Block_size = _Scary_val::_Get_block_size();
         if (_Myoff() % _Block_size == 0 && _Mapsize() <= (_Mysize() + _Block_size) / _Block_size) {
             _Growmap(1);
         }
@@ -1602,6 +1605,7 @@ private:
 
     void _Growmap(size_type _Count) { // grow map by at least _Count pointers, _Mapsize() a power of 2
         static_assert(_Minimum_map_size > 1, "The _Xlen() test should always be performed.");
+        constexpr int _Block_size = _Scary_val::_Get_block_size();
 
         _Alpty _Almap(_Getal());
         size_type _Newsize = _Mapsize() > 0 ? _Mapsize() : 1;
@@ -1652,6 +1656,7 @@ private:
     void _Reset_map() noexcept {
         // pre: each block pointer is either null or pointing to a block without constructed elements
 
+        constexpr int _Block_size = _Scary_val::_Get_block_size();
         for (auto _Block = _Map_distance(); _Block > 0;) { // free storage for a block and destroy pointer
             --_Block;
             auto& _Block_ptr = _Map()[_Block];
