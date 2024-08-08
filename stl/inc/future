@@ -187,6 +187,12 @@ struct _State_deleter : _Deleter_base<_Ty> { // manage allocator and deletion st
     _Alloc _My_alloc;
 };
 
+template <class, class = void>
+constexpr bool _Is_default_newable = false;
+
+template <class _Ty>
+constexpr bool _Is_default_newable<_Ty, void_t<decltype(::new _Ty)>> = true;
+
 template <class _Ty>
 struct __declspec(novtable) _Clonable_deleter_base : _Deleter_base<_Ty> {
     // TRANSITION, ABI, should be fused into _Deleter_base
@@ -211,7 +217,7 @@ union _Result_holder {
     _Result_holder() noexcept {}
     ~_Result_holder() noexcept {}
 
-    _Ty _Held_value;
+    remove_cv_t<_Ty> _Held_value;
 };
 
 template <class _Ty>
@@ -220,7 +226,7 @@ public:
     using _State_type = _Ty;
     using _Mydel      = _Deleter_base<_Ty>;
 
-    // TRANSITION, incorrectly default constructs _Result when _Ty is default constructible
+    // TRANSITION, incorrectly default constructs _Result when _Ty is default initializable
     _Associated_state(_Mydel* _Dp = nullptr)
         : _Refs(1), // non-atomic initialization
           _Result(), _Exception(), _Retrieved(false), _Ready(false), _Ready_at_thread_exit(false),
@@ -231,7 +237,7 @@ public:
             _Cond._Unregister(_Mtx);
         }
 
-        if constexpr (!is_default_constructible_v<_Ty>) {
+        if constexpr (!_Is_default_newable<_Ty>) {
             if (_Has_stored_result) {
                 _Result._Held_value.~_Ty();
             }
@@ -319,7 +325,7 @@ public:
             _STD rethrow_exception(_Exception);
         }
 
-        if constexpr (is_default_constructible_v<_Ty>) {
+        if constexpr (_Is_default_newable<_Ty>) {
             return _Result;
         } else {
             return _Result._Held_value;
@@ -327,12 +333,54 @@ public:
     }
 
     template <class _Ty2>
+    void _Reconstruct_result(_Ty2&& _Val) {
+        auto& _Uncv_result = const_cast<remove_cv_t<_Ty>&>(_Result);
+        if constexpr (is_nothrow_constructible_v<_Ty, _Ty2>) {
+            if constexpr (!is_trivially_destructible_v<_Ty>) {
+                _Result.~_Ty();
+            }
+            _STD _Construct_in_place(_Uncv_result, _STD forward<_Ty2>(_Val));
+        } else if constexpr (is_nothrow_move_constructible_v<remove_cv_t<_Ty>>) {
+            remove_cv_t<_Ty> _Tmp(_STD forward<_Ty2>(_Val));
+            if constexpr (!is_trivially_destructible_v<_Ty>) {
+                _Result.~_Ty();
+            }
+            _STD _Construct_in_place(_Uncv_result, _STD move(_Tmp));
+        } else { // TRANSITION, keeps _Result living
+            struct _Reconstruction_guard {
+                remove_cv_t<_Ty>* _Res_addr;
+
+                _Reconstruction_guard& operator=(const _Reconstruction_guard&) = delete;
+                _Reconstruction_guard& operator=(_Reconstruction_guard&&)      = delete;
+
+                ~_Reconstruction_guard() {
+                    if (_Res_addr != nullptr) {
+                        _STD _Default_construct_in_place(*_Res_addr); // terminates if the default-initialization throws
+                    }
+                }
+            };
+            _Reconstruction_guard _Guard{_STD addressof(_Uncv_result)};
+
+            if constexpr (!is_trivially_destructible_v<_Ty>) {
+                _Result.~_Ty();
+            }
+            _STD _Construct_in_place(_Uncv_result, _STD forward<_Ty2>(_Val));
+            _Guard._Res_addr = nullptr;
+        }
+    }
+
+    template <class _Ty2>
     void _Emplace_result(_Ty2&& _Val) {
-        // TRANSITION, incorrectly assigns _Result when _Ty is default constructible
-        if constexpr (is_default_constructible_v<_Ty>) {
-            _Result = _STD forward<_Ty2>(_Val);
+        // TRANSITION, keeps _Result living when _Ty is default initializable
+        if constexpr (_Is_default_newable<_Ty>) {
+            // TRANSITION, incorrectly assigns _Result when _Ty is default initializable and assignable
+            if constexpr (is_assignable_v<_Ty&, _Ty2>) {
+                _Result = _STD forward<_Ty2>(_Val);
+            } else {
+                _Reconstruct_result(_STD forward<_Ty2>(_Val));
+            }
         } else {
-            ::new (static_cast<void*>(_STD addressof(_Result._Held_value))) _Ty(_STD forward<_Ty2>(_Val));
+            _STD _Construct_in_place(_Result._Held_value, _STD forward<_Ty2>(_Val));
             _Has_stored_result = true;
         }
     }
@@ -389,7 +437,7 @@ public:
     }
 
     bool _Already_has_stored_result() const noexcept { // Has a result or an exception
-        if constexpr (is_default_constructible_v<_Ty>) {
+        if constexpr (_Is_default_newable<_Ty>) {
             return _Has_stored_result;
         } else {
             return _Has_stored_result || _Exception;
@@ -421,7 +469,7 @@ protected:
     }
 
 public:
-    conditional_t<is_default_constructible_v<_Ty>, _Ty, _Result_holder<_Ty>> _Result;
+    conditional_t<_Is_default_newable<_Ty>, _Ty, _Result_holder<_Ty>> _Result;
     exception_ptr _Exception;
     mutex _Mtx;
     condition_variable _Cond;
@@ -440,7 +488,7 @@ private:
 
     virtual void _Do_notify(unique_lock<mutex>* _Lock, bool _At_thread_exit) { // notify waiting threads
         // TRANSITION, ABI: This is virtual, but never overridden.
-        if constexpr (is_default_constructible_v<_Ty>) {
+        if constexpr (_Is_default_newable<_Ty>) {
             _Has_stored_result = true;
         }
 
