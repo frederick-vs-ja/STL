@@ -616,6 +616,7 @@ tests\P2165R4_tuple_like_pair
 tests\P2165R4_tuple_like_relational_operators
 tests\P2165R4_tuple_like_tuple_members
 tests\P2231R1_complete_constexpr_optional_variant
+tests\P2255R2_reference_binding_traits
 tests\P2273R3_constexpr_unique_ptr
 tests\P2278R4_basic_const_iterator
 tests\P2278R4_const_span

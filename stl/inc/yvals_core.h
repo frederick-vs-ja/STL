@@ -943,6 +943,13 @@ _EMIT_STL_ERROR(STL1001, "Unexpected compiler version, expected MSVC 19.42 or ne
 #error /GR implies _HAS_STATIC_RTTI.
 #endif // defined(_CPPRTTI) && !_HAS_STATIC_RTTI
 
+// TRANSITION, MSVC and EDG haven't implemented intrinsics needed for P2255R2.
+#if defined(__clang__) && !defined(__EDG__)
+#define _HAS_REFERENCE_BINDING_TRAITS_INTRINSICS 1
+#else // ^^^ defined(__clang__) && !defined(__EDG__) / !defined(__clang__) || defined(__EDG__) vvv
+#define _HAS_REFERENCE_BINDING_TRAITS_INTRINSICS 0
+#endif // !defined(__clang__) || defined(__EDG__)
+
 // N4950 [dcl.constexpr]/1: "A function or static data member declared with the
 // constexpr or consteval specifier is implicitly an inline function or variable"
 
