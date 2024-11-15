@@ -21,9 +21,10 @@ _STL_DISABLE_CLANG_WARNINGS
 #undef new
 
 _STD_BEGIN
-template <class _Mydeque>
+template <class _FirewalledDeque>
 class _Deque_unchecked_const_iterator {
 private:
+    using _Mydeque   = typename _FirewalledDeque::type;
     using _Size_type = typename _Mydeque::size_type;
 
     static constexpr int _Block_size = _Mydeque::_Block_size;
@@ -145,11 +146,12 @@ public:
     _Size_type _Myoff; // offset of element in deque
 };
 
-template <class _Mydeque>
-class _Deque_unchecked_iterator : public _Deque_unchecked_const_iterator<_Mydeque> {
+template <class _FirewalledDeque>
+class _Deque_unchecked_iterator : public _Deque_unchecked_const_iterator<_FirewalledDeque> {
 private:
+    using _Mydeque   = typename _FirewalledDeque::type;
     using _Size_type = typename _Mydeque::size_type;
-    using _Mybase    = _Deque_unchecked_const_iterator<_Mydeque>;
+    using _Mybase    = _Deque_unchecked_const_iterator<_FirewalledDeque>;
 
 public:
     using iterator_category = random_access_iterator_tag;
@@ -228,9 +230,10 @@ public:
     }
 };
 
-template <class _Mydeque>
+template <class _FirewalledDeque>
 class _Deque_const_iterator : public _Iterator_base12 {
 private:
+    using _Mydeque   = typename _FirewalledDeque::type;
     using _Size_type = typename _Mydeque::size_type;
 
     static constexpr int _Block_size = _Mydeque::_Block_size;
@@ -395,7 +398,7 @@ public:
 
     using _Prevent_inheriting_unwrap = _Deque_const_iterator;
 
-    _NODISCARD _Deque_unchecked_const_iterator<_Mydeque> _Unwrapped() const noexcept {
+    _NODISCARD _Deque_unchecked_const_iterator<_FirewalledDeque> _Unwrapped() const noexcept {
         return {this->_Myoff, this->_Getcont()};
     }
 
@@ -420,18 +423,19 @@ public:
     }
 #endif // _ITERATOR_DEBUG_LEVEL != 0
 
-    void _Seek_to(const _Deque_unchecked_const_iterator<_Mydeque>& _UIt) noexcept {
+    void _Seek_to(const _Deque_unchecked_const_iterator<_FirewalledDeque>& _UIt) noexcept {
         _Myoff = _UIt._Myoff;
     }
 
     _Size_type _Myoff; // offset of element in deque
 };
 
-template <class _Mydeque>
-class _Deque_iterator : public _Deque_const_iterator<_Mydeque> {
+template <class _FirewalledDeque>
+class _Deque_iterator : public _Deque_const_iterator<_FirewalledDeque> {
 private:
+    using _Mydeque   = typename _FirewalledDeque::type;
     using _Size_type = typename _Mydeque::size_type;
-    using _Mybase    = _Deque_const_iterator<_Mydeque>;
+    using _Mybase    = _Deque_const_iterator<_FirewalledDeque>;
 
 public:
     using iterator_category = random_access_iterator_tag;
@@ -508,7 +512,7 @@ public:
 
     using _Prevent_inheriting_unwrap = _Deque_iterator;
 
-    _NODISCARD _Deque_unchecked_iterator<_Mydeque> _Unwrapped() const noexcept {
+    _NODISCARD _Deque_unchecked_iterator<_FirewalledDeque> _Unwrapped() const noexcept {
         return {this->_Myoff, this->_Getcont()};
     }
 };
@@ -631,10 +635,10 @@ public:
     using reference       = _Ty&;
     using const_reference = const _Ty&;
 
-    using iterator                  = _Deque_iterator<_Scary_val>;
-    using const_iterator            = _Deque_const_iterator<_Scary_val>;
-    using _Unchecked_iterator       = _Deque_unchecked_iterator<_Scary_val>;
-    using _Unchecked_const_iterator = _Deque_unchecked_const_iterator<_Scary_val>;
+    using iterator                  = _Deque_iterator<_Adl_firewall<_Scary_val>>;
+    using const_iterator            = _Deque_const_iterator<_Adl_firewall<_Scary_val>>;
+    using _Unchecked_iterator       = _Deque_unchecked_iterator<_Adl_firewall<_Scary_val>>;
+    using _Unchecked_const_iterator = _Deque_unchecked_const_iterator<_Adl_firewall<_Scary_val>>;
 
     using reverse_iterator       = _STD reverse_iterator<iterator>;
     using const_reverse_iterator = _STD reverse_iterator<const_iterator>;

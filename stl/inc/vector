@@ -27,9 +27,10 @@ _STL_DISABLE_CLANG_WARNINGS
 #undef new
 
 _STD_BEGIN
-template <class _Myvec>
+template <class _FirewalledVec>
 class _Vector_const_iterator : public _Iterator_base {
 public:
+    using _Myvec = typename _FirewalledVec::type;
 #if _HAS_CXX20
     using iterator_concept = contiguous_iterator_tag;
 #endif // _HAS_CXX20
@@ -226,9 +227,9 @@ public:
 };
 
 #if _HAS_CXX20
-template <class _Myvec>
-struct pointer_traits<_Vector_const_iterator<_Myvec>> {
-    using pointer         = _Vector_const_iterator<_Myvec>;
+template <class _FirewalledVec>
+struct pointer_traits<_Vector_const_iterator<_FirewalledVec>> {
+    using pointer         = _Vector_const_iterator<_FirewalledVec>;
     using element_type    = const pointer::value_type;
     using difference_type = pointer::difference_type;
 
@@ -238,7 +239,7 @@ struct pointer_traits<_Vector_const_iterator<_Myvec>> {
         // capacity() of 0 is not. This function cannot distinguish those two cases, so it incorrectly does not diagnose
         // the latter. In practice, this isn't a significant problem since to_address returns nullptr for such an
         // iterator.
-        const auto _Mycont = static_cast<const _Myvec*>(_Iter._Getcont());
+        const auto _Mycont = static_cast<const typename _FirewalledVec::type*>(_Iter._Getcont());
         if (_Mycont) {
             _STL_VERIFY(_Mycont->_Myfirst <= _Iter._Ptr && _Iter._Ptr <= _Mycont->_Mylast,
                 "can't convert out-of-range vector iterator to pointer");
@@ -252,10 +253,11 @@ struct pointer_traits<_Vector_const_iterator<_Myvec>> {
 };
 #endif // _HAS_CXX20
 
-template <class _Myvec>
-class _Vector_iterator : public _Vector_const_iterator<_Myvec> {
+template <class _FirewalledVec>
+class _Vector_iterator : public _Vector_const_iterator<_FirewalledVec> {
 public:
-    using _Mybase = _Vector_const_iterator<_Myvec>;
+    using _Myvec  = typename _FirewalledVec::type;
+    using _Mybase = _Vector_const_iterator<_FirewalledVec>;
 
 #if _HAS_CXX20
     using iterator_concept = contiguous_iterator_tag;
@@ -348,9 +350,9 @@ public:
 };
 
 #if _HAS_CXX20
-template <class _Myvec>
-struct pointer_traits<_Vector_iterator<_Myvec>> {
-    using pointer         = _Vector_iterator<_Myvec>;
+template <class _FirewalledVec>
+struct pointer_traits<_Vector_iterator<_FirewalledVec>> {
+    using pointer         = _Vector_iterator<_FirewalledVec>;
     using element_type    = pointer::value_type;
     using difference_type = pointer::difference_type;
 
@@ -360,7 +362,7 @@ struct pointer_traits<_Vector_iterator<_Myvec>> {
         // capacity() of 0 is not. This function cannot distinguish those two cases, so it incorrectly does not diagnose
         // the latter. In practice, this isn't a significant problem since to_address returns nullptr for such an
         // iterator.
-        const auto _Mycont = static_cast<const _Myvec*>(_Iter._Getcont());
+        const auto _Mycont = static_cast<const typename _FirewalledVec::type*>(_Iter._Getcont());
         if (_Mycont) {
             _STL_VERIFY(_Mycont->_Myfirst <= _Iter._Ptr && _Iter._Ptr <= _Mycont->_Mylast,
                 "can't convert out-of-range vector iterator to pointer");
@@ -663,8 +665,8 @@ private:
     };
 
 public:
-    using iterator               = _Vector_iterator<_Scary_val>;
-    using const_iterator         = _Vector_const_iterator<_Scary_val>;
+    using iterator               = _Vector_iterator<_Adl_firewall<_Scary_val>>;
+    using const_iterator         = _Vector_const_iterator<_Adl_firewall<_Scary_val>>;
     using reverse_iterator       = _STD reverse_iterator<iterator>;
     using const_reverse_iterator = _STD reverse_iterator<const_iterator>;
 

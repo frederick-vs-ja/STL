@@ -24,7 +24,7 @@ struct _Iterator_base12_compatible { // TRANSITION, for binary compatibility
 };
 #endif // _ITERATOR_DEBUG_LEVEL != 0
 
-template <class _Ty, size_t _Size>
+template <class _FirewalledTy, size_t _Size>
 class _Array_const_iterator
 #if _ITERATOR_DEBUG_LEVEL != 0
     : private _Iterator_base12_compatible
@@ -35,10 +35,10 @@ public:
     using iterator_concept = contiguous_iterator_tag;
 #endif // _HAS_CXX20
     using iterator_category = random_access_iterator_tag;
-    using value_type        = _Ty;
+    using value_type        = typename _FirewalledTy::type;
     using difference_type   = ptrdiff_t;
-    using pointer           = const _Ty*;
-    using reference         = const _Ty&;
+    using pointer           = const value_type*;
+    using reference         = const value_type&;
 
     enum { _EEN_SIZE = _Size }; // helper for expression evaluator
 
@@ -283,10 +283,10 @@ public:
 };
 
 #if _HAS_CXX20
-template <class _Ty, size_t _Size>
-struct pointer_traits<_Array_const_iterator<_Ty, _Size>> {
-    using pointer         = _Array_const_iterator<_Ty, _Size>;
-    using element_type    = const _Ty;
+template <class _FirewalledTy, size_t _Size>
+struct pointer_traits<_Array_const_iterator<_FirewalledTy, _Size>> {
+    using pointer         = _Array_const_iterator<_FirewalledTy, _Size>;
+    using element_type    = const _FirewalledTy::type;
     using difference_type = ptrdiff_t;
 
     _NODISCARD static constexpr element_type* to_address(const pointer _Iter) noexcept {
@@ -295,19 +295,19 @@ struct pointer_traits<_Array_const_iterator<_Ty, _Size>> {
 };
 #endif // _HAS_CXX20
 
-template <class _Ty, size_t _Size>
-class _Array_iterator : public _Array_const_iterator<_Ty, _Size> {
+template <class _FirewalledTy, size_t _Size>
+class _Array_iterator : public _Array_const_iterator<_FirewalledTy, _Size> {
 public:
-    using _Mybase = _Array_const_iterator<_Ty, _Size>;
+    using _Mybase = _Array_const_iterator<_FirewalledTy, _Size>;
 
 #if _HAS_CXX20
     using iterator_concept = contiguous_iterator_tag;
 #endif // _HAS_CXX20
     using iterator_category = random_access_iterator_tag;
-    using value_type        = _Ty;
+    using value_type        = typename _FirewalledTy::type;
     using difference_type   = ptrdiff_t;
-    using pointer           = _Ty*;
-    using reference         = _Ty&;
+    using pointer           = value_type*;
+    using reference         = value_type&;
 
     enum { _EEN_SIZE = _Size }; // helper for expression evaluator
 
@@ -386,10 +386,10 @@ public:
 };
 
 #if _HAS_CXX20
-template <class _Ty, size_t _Size>
-struct pointer_traits<_Array_iterator<_Ty, _Size>> {
-    using pointer         = _Array_iterator<_Ty, _Size>;
-    using element_type    = _Ty;
+template <class _FirewalledTy, size_t _Size>
+struct pointer_traits<_Array_iterator<_FirewalledTy, _Size>> {
+    using pointer         = _Array_iterator<_FirewalledTy, _Size>;
+    using element_type    = _FirewalledTy::type;
     using difference_type = ptrdiff_t;
 
     _NODISCARD static constexpr element_type* to_address(const pointer _Iter) noexcept {
@@ -412,8 +412,8 @@ public:
     using reference       = _Ty&;
     using const_reference = const _Ty&;
 
-    using iterator       = _Array_iterator<_Ty, _Size>;
-    using const_iterator = _Array_const_iterator<_Ty, _Size>;
+    using iterator       = _Array_iterator<_Adl_firewall<_Ty>, _Size>;
+    using const_iterator = _Array_const_iterator<_Adl_firewall<_Ty>, _Size>;
 
     using reverse_iterator       = _STD reverse_iterator<iterator>;
     using const_reverse_iterator = _STD reverse_iterator<const_iterator>;
@@ -597,8 +597,8 @@ public:
     using reference       = _Ty&;
     using const_reference = const _Ty&;
 
-    using iterator               = _Array_iterator<_Ty, 0>;
-    using const_iterator         = _Array_const_iterator<_Ty, 0>;
+    using iterator               = _Array_iterator<_Adl_firewall<_Ty>, 0>;
+    using const_iterator         = _Array_const_iterator<_Adl_firewall<_Ty>, 0>;
     using reverse_iterator       = _STD reverse_iterator<iterator>;
     using const_reverse_iterator = _STD reverse_iterator<const_iterator>;
 
