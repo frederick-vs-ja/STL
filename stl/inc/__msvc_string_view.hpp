@@ -1214,14 +1214,14 @@ constexpr bool _Is_EcharT = _Is_any_of_v<_Ty, char, wchar_t,
 _EXPORT_STD template <class _Elem, class _Traits = char_traits<_Elem>>
 class basic_string_view;
 
-template <class _Traits>
+template <class _FirewalledTraits>
 class _String_view_iterator {
 public:
 #if _HAS_CXX20
     using iterator_concept = contiguous_iterator_tag;
 #endif // _HAS_CXX20
     using iterator_category = random_access_iterator_tag;
-    using value_type        = typename _Traits::char_type;
+    using value_type        = typename _FirewalledTraits::type::char_type;
     using difference_type   = ptrdiff_t;
     using pointer           = const value_type*;
     using reference         = const value_type&;
@@ -1229,7 +1229,7 @@ public:
     constexpr _String_view_iterator() noexcept = default;
 
 private:
-    friend basic_string_view<value_type, _Traits>;
+    friend basic_string_view<value_type, typename _FirewalledTraits::type>;
 
 #if _ITERATOR_DEBUG_LEVEL >= 1
     constexpr _String_view_iterator(const pointer _Data, const size_t _Size, const size_t _Off) noexcept
@@ -1465,9 +1465,9 @@ private:
 };
 
 #if _HAS_CXX20
-template <class _Traits>
-struct pointer_traits<_String_view_iterator<_Traits>> {
-    using pointer         = _String_view_iterator<_Traits>;
+template <class _FirewalledTraits>
+struct pointer_traits<_String_view_iterator<_FirewalledTraits>> {
+    using pointer         = _String_view_iterator<_FirewalledTraits>;
     using element_type    = const pointer::value_type;
     using difference_type = pointer::difference_type;
 
@@ -1500,7 +1500,7 @@ public:
     using const_pointer          = const _Elem*;
     using reference              = _Elem&;
     using const_reference        = const _Elem&;
-    using const_iterator         = _String_view_iterator<_Traits>;
+    using const_iterator         = _String_view_iterator<_Adl_firewall<_Traits>>;
     using iterator               = const_iterator;
     using const_reverse_iterator = _STD reverse_iterator<const_iterator>;
     using reverse_iterator       = const_reverse_iterator;
