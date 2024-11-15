@@ -964,6 +964,17 @@ _NODISCARD constexpr _Result_type invoke_r(_Callable&& _Obj, _Types&&... _Args)
 }
 #endif // _HAS_CXX23
 
+template <class _Ty>
+struct _Adl_firewall_impl {
+    struct _Type {
+        using type = _Ty;
+    };
+};
+
+// ensure that the only associated namespace is std, and ADL won't be performed on _Ty
+template <class _Ty>
+using _Adl_firewall = typename _Adl_firewall_impl<_Ty>::_Type;
+
 struct _Unused_parameter { // generic unused parameter struct
     constexpr _Unused_parameter() noexcept = default;
     template <class _Ty>
