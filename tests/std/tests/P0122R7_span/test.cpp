@@ -1063,8 +1063,6 @@ void test_non_constexpr() {
     assert(sp_6.size() == SizeBytes);
 }
 
-#if !_HAS_CXX23 // TRANSITION, ABI, const_iterator<_Span_iterator<holder<incomplete>*>> is ill-formed due to ADL in
-                // constraints checking
 #ifndef _M_CEE // TRANSITION, VSO-1659496
 // GH-1596: "<algorithm>: unqualified calls to _Adl_verify_range incorrectly cause instantiation"
 template <class T>
@@ -1082,7 +1080,6 @@ void test_adl_proof_span_constructors() { // COMPILE-ONLY
     [[maybe_unused]] span<validator> s2{varr, 1};
 }
 #endif // ^^^ no workaround ^^^
-#endif // !_HAS_CXX23
 
 int main() {
     static_assert(test());
