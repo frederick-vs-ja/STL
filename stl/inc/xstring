@@ -24,9 +24,10 @@ _STL_DISABLE_CLANG_WARNINGS
 #undef new
 
 _STD_BEGIN
-template <class _Mystr>
+template <class _FirewalledStr>
 class _String_const_iterator : public _Iterator_base {
 public:
+    using _Mystr = typename _FirewalledStr::type;
 #if _HAS_CXX20
     using iterator_concept = contiguous_iterator_tag;
 #endif // _HAS_CXX20
@@ -231,15 +232,15 @@ public:
 };
 
 #if _HAS_CXX20
-template <class _Mystr>
-struct pointer_traits<_String_const_iterator<_Mystr>> {
-    using pointer         = _String_const_iterator<_Mystr>;
+template <class _FirewalledStr>
+struct pointer_traits<_String_const_iterator<_FirewalledStr>> {
+    using pointer         = _String_const_iterator<_FirewalledStr>;
     using element_type    = const pointer::value_type;
     using difference_type = pointer::difference_type;
 
     _NODISCARD static constexpr element_type* to_address(const pointer _Iter) noexcept {
 #if _ITERATOR_DEBUG_LEVEL >= 1
-        const auto _Mycont = static_cast<const _Mystr*>(_Iter._Getcont());
+        const auto _Mycont = static_cast<const typename _FirewalledStr::type*>(_Iter._Getcont());
         if (!_Mycont) {
             _STL_VERIFY(!_Iter._Ptr, "cannot convert string iterator to pointer because the iterator was invalidated "
                                      "(e.g. reallocation occurred, or the string was destroyed)");
@@ -261,10 +262,11 @@ struct pointer_traits<_String_const_iterator<_Mystr>> {
 };
 #endif // _HAS_CXX20
 
-template <class _Mystr>
-class _String_iterator : public _String_const_iterator<_Mystr> {
+template <class _FirewalledStr>
+class _String_iterator : public _String_const_iterator<_FirewalledStr> {
 public:
-    using _Mybase = _String_const_iterator<_Mystr>;
+    using _Mystr  = typename _FirewalledStr::type;
+    using _Mybase = _String_const_iterator<_FirewalledStr>;
 
 #if _HAS_CXX20
     using iterator_concept = contiguous_iterator_tag;
@@ -349,15 +351,15 @@ public:
 };
 
 #if _HAS_CXX20
-template <class _Mystr>
-struct pointer_traits<_String_iterator<_Mystr>> {
-    using pointer         = _String_iterator<_Mystr>;
+template <class _FirewalledStr>
+struct pointer_traits<_String_iterator<_FirewalledStr>> {
+    using pointer         = _String_iterator<_FirewalledStr>;
     using element_type    = pointer::value_type;
     using difference_type = pointer::difference_type;
 
     _NODISCARD static constexpr element_type* to_address(const pointer _Iter) noexcept {
 #if _ITERATOR_DEBUG_LEVEL >= 1
-        const auto _Mycont = static_cast<const _Mystr*>(_Iter._Getcont());
+        const auto _Mycont = static_cast<const typename _FirewalledStr::type*>(_Iter._Getcont());
         if (!_Mycont) {
             _STL_VERIFY(!_Iter._Ptr, "cannot convert string iterator to pointer because the iterator was invalidated "
                                      "(e.g. reallocation occurred, or the string was destroyed)");
@@ -622,8 +624,8 @@ public:
     using reference       = value_type&;
     using const_reference = const value_type&;
 
-    using iterator       = _String_iterator<_Scary_val>;
-    using const_iterator = _String_const_iterator<_Scary_val>;
+    using iterator       = _String_iterator<_Adl_firewall<_Scary_val>>;
+    using const_iterator = _String_const_iterator<_Adl_firewall<_Scary_val>>;
 
     using reverse_iterator       = _STD reverse_iterator<iterator>;
     using const_reverse_iterator = _STD reverse_iterator<const_iterator>;

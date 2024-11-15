@@ -32,11 +32,12 @@ template <class _Ty>
 constexpr bool _Is_transparent_v<_Ty, void_t<typename _Ty::is_transparent>> = true;
 #endif // ^^^ !_HAS_CXX20 ^^^
 
-template <class _Mytree, class _Base = _Iterator_base0>
+template <class _FirewalledTree, class _Base = _Iterator_base0>
 class _Tree_unchecked_const_iterator : public _Base {
 public:
     using iterator_category = bidirectional_iterator_tag;
 
+    using _Mytree         = typename _FirewalledTree::type;
     using _Nodeptr        = typename _Mytree::_Nodeptr;
     using value_type      = typename _Mytree::value_type;
     using difference_type = typename _Mytree::difference_type;
@@ -127,12 +128,13 @@ public:
     _Nodeptr _Ptr; // pointer to node
 };
 
-template <class _Mytree>
-class _Tree_unchecked_iterator : public _Tree_unchecked_const_iterator<_Mytree> {
+template <class _FirewalledTree>
+class _Tree_unchecked_iterator : public _Tree_unchecked_const_iterator<_FirewalledTree> {
 public:
-    using _Mybase           = _Tree_unchecked_const_iterator<_Mytree>;
+    using _Mybase           = _Tree_unchecked_const_iterator<_FirewalledTree>;
     using iterator_category = bidirectional_iterator_tag;
 
+    using _Mytree         = typename _FirewalledTree::type;
     using _Nodeptr        = typename _Mytree::_Nodeptr;
     using value_type      = typename _Mytree::value_type;
     using difference_type = typename _Mytree::difference_type;
@@ -172,12 +174,13 @@ public:
     }
 };
 
-template <class _Mytree>
-class _Tree_const_iterator : public _Tree_unchecked_const_iterator<_Mytree, _Iterator_base> {
+template <class _FirewalledTree>
+class _Tree_const_iterator : public _Tree_unchecked_const_iterator<_FirewalledTree, _Iterator_base> {
 public:
-    using _Mybase           = _Tree_unchecked_const_iterator<_Mytree, _Iterator_base>;
+    using _Mybase           = _Tree_unchecked_const_iterator<_FirewalledTree, _Iterator_base>;
     using iterator_category = bidirectional_iterator_tag;
 
+    using _Mytree         = typename _FirewalledTree::type;
     using _Nodeptr        = typename _Mytree::_Nodeptr;
     using value_type      = typename _Mytree::value_type;
     using difference_type = typename _Mytree::difference_type;
@@ -257,21 +260,23 @@ public:
 
     using _Prevent_inheriting_unwrap = _Tree_const_iterator;
 
-    _NODISCARD _Tree_unchecked_const_iterator<_Mytree> _Unwrapped() const noexcept {
-        return _Tree_unchecked_const_iterator<_Mytree>(this->_Ptr, static_cast<const _Mytree*>(this->_Getcont()));
+    _NODISCARD _Tree_unchecked_const_iterator<_FirewalledTree> _Unwrapped() const noexcept {
+        return _Tree_unchecked_const_iterator<_FirewalledTree>(
+            this->_Ptr, static_cast<const _Mytree*>(this->_Getcont()));
     }
 
-    void _Seek_to(const _Tree_unchecked_const_iterator<_Mytree> _It) noexcept {
+    void _Seek_to(const _Tree_unchecked_const_iterator<_FirewalledTree> _It) noexcept {
         this->_Ptr = _It._Ptr;
     }
 };
 
-template <class _Mytree>
-class _Tree_iterator : public _Tree_const_iterator<_Mytree> {
+template <class _FirewalledTree>
+class _Tree_iterator : public _Tree_const_iterator<_FirewalledTree> {
 public:
-    using _Mybase           = _Tree_const_iterator<_Mytree>;
+    using _Mybase           = _Tree_const_iterator<_FirewalledTree>;
     using iterator_category = bidirectional_iterator_tag;
 
+    using _Mytree         = typename _FirewalledTree::type;
     using _Nodeptr        = typename _Mytree::_Nodeptr;
     using value_type      = typename _Mytree::value_type;
     using difference_type = typename _Mytree::difference_type;
@@ -313,8 +318,8 @@ public:
 
     using _Prevent_inheriting_unwrap = _Tree_iterator;
 
-    _NODISCARD _Tree_unchecked_iterator<_Mytree> _Unwrapped() const noexcept {
-        return _Tree_unchecked_iterator<_Mytree>(this->_Ptr, static_cast<const _Mytree*>(this->_Getcont()));
+    _NODISCARD _Tree_unchecked_iterator<_FirewalledTree> _Unwrapped() const noexcept {
+        return _Tree_unchecked_iterator<_FirewalledTree>(this->_Ptr, static_cast<const _Mytree*>(this->_Getcont()));
     }
 };
 
@@ -441,8 +446,8 @@ public:
     using reference       = value_type&;
     using const_reference = const value_type&;
 
-    using _Unchecked_const_iterator = _Tree_unchecked_const_iterator<_Tree_val>;
-    using const_iterator            = _Tree_const_iterator<_Tree_val>;
+    using _Unchecked_const_iterator = _Tree_unchecked_const_iterator<_Adl_firewall<_Tree_val>>;
+    using const_iterator            = _Tree_const_iterator<_Adl_firewall<_Tree_val>>;
 
     template <class _Alnode>
     struct _NODISCARD _Erase_tree_and_orphan_guard {
@@ -878,6 +883,8 @@ protected:
         _Tree_iter_types<value_type, typename _Alty_traits::size_type, typename _Alty_traits::difference_type,
             typename _Alty_traits::pointer, typename _Alty_traits::const_pointer, _Nodeptr>>>;
 
+    using _Adl_scary_val = _Adl_firewall<_Scary_val>;
+
     static constexpr bool _Multi  = _Traits::_Multi;
     static constexpr bool _Is_set = is_same_v<key_type, value_type>;
 
@@ -898,11 +905,11 @@ public:
     using reference       = value_type&;
     using const_reference = const value_type&;
 
-    using iterator       = conditional_t<_Is_set, _Tree_const_iterator<_Scary_val>, _Tree_iterator<_Scary_val>>;
-    using const_iterator = _Tree_const_iterator<_Scary_val>;
-    using _Unchecked_iterator =
-        conditional_t<_Is_set, _Tree_unchecked_const_iterator<_Scary_val>, _Tree_unchecked_iterator<_Scary_val>>;
-    using _Unchecked_const_iterator = _Tree_unchecked_const_iterator<_Scary_val>;
+    using iterator       = conditional_t<_Is_set, _Tree_const_iterator<_Adl_scary_val>, _Tree_iterator<_Adl_scary_val>>;
+    using const_iterator = _Tree_const_iterator<_Adl_firewall<_Scary_val>>;
+    using _Unchecked_iterator       = conditional_t<_Is_set, _Tree_unchecked_const_iterator<_Adl_scary_val>,
+              _Tree_unchecked_iterator<_Adl_scary_val>>;
+    using _Unchecked_const_iterator = _Tree_unchecked_const_iterator<_Adl_scary_val>;
 
     using reverse_iterator       = _STD reverse_iterator<iterator>;
     using const_reverse_iterator = _STD reverse_iterator<const_iterator>;
