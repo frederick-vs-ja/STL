@@ -27,14 +27,14 @@ _STD_BEGIN
 
 _EXPORT_STD inline constexpr size_t dynamic_extent = static_cast<size_t>(-1);
 
-template <class _Ty>
+template <class _FirewalledTy>
 struct _Span_iterator {
     using iterator_concept  = contiguous_iterator_tag;
     using iterator_category = random_access_iterator_tag;
-    using value_type        = remove_cv_t<_Ty>;
+    using value_type        = remove_cv_t<typename _FirewalledTy::type>;
     using difference_type   = ptrdiff_t;
-    using pointer           = _Ty*;
-    using reference         = _Ty&;
+    using pointer           = _FirewalledTy::type*;
+    using reference         = _FirewalledTy::type&;
 
     _NODISCARD constexpr reference operator*() const noexcept {
 #if _ITERATOR_DEBUG_LEVEL >= 1
@@ -189,10 +189,10 @@ struct _Span_iterator {
 #endif // _ITERATOR_DEBUG_LEVEL >= 1
 };
 
-template <class _Ty>
-struct pointer_traits<_Span_iterator<_Ty>> {
-    using pointer         = _Span_iterator<_Ty>;
-    using element_type    = _Ty;
+template <class _FirewalledTy>
+struct pointer_traits<_Span_iterator<_FirewalledTy>> {
+    using pointer         = _Span_iterator<_FirewalledTy>;
+    using element_type    = _FirewalledTy::type;
     using difference_type = ptrdiff_t;
 
     _NODISCARD static constexpr element_type* to_address(const pointer _Iter) noexcept {
@@ -287,7 +287,7 @@ public:
     using const_pointer    = const _Ty*;
     using reference        = _Ty&;
     using const_reference  = const _Ty&;
-    using iterator         = _Span_iterator<_Ty>;
+    using iterator         = _Span_iterator<_Adl_firewall<_Ty>>;
     using reverse_iterator = _STD reverse_iterator<iterator>;
 #if _HAS_CXX23
     using const_iterator         = _STD const_iterator<iterator>;
