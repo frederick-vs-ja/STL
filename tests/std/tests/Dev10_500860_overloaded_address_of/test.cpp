@@ -116,47 +116,50 @@ template class std::unordered_multimap<Evil, Evil, Hash>;
 template class std::unordered_set<Evil, Hash>;
 template class std::unordered_multiset<Evil, Hash>;
 
+// STL-provided iterators are used with _Adl_firewall to avoid ADL on the element types.
 
-template class std::_Array_iterator<Evil, 5>;
-template class std::_Array_const_iterator<Evil, 5>;
+template class std::_Array_iterator<_Adl_firewall<Evil>, 5>;
+template class std::_Array_const_iterator<_Adl_firewall<Evil>, 5>;
 
-template class std::_Deque_iterator<_Deque_val<_Deque_simple_types<Evil>>>;
-template class std::_Deque_const_iterator<_Deque_val<_Deque_simple_types<Evil>>>;
+template class std::_Deque_iterator<_Adl_firewall<_Deque_val<_Deque_simple_types<Evil>>>>;
+template class std::_Deque_const_iterator<_Adl_firewall<_Deque_val<_Deque_simple_types<Evil>>>>;
 
-template class std::_Flist_iterator<_Flist_val<_Flist_simple_types<Evil>>>;
-template class std::_Flist_const_iterator<_Flist_val<_Flist_simple_types<Evil>>>;
+template class std::_Flist_iterator<_Adl_firewall<_Flist_val<_Flist_simple_types<Evil>>>>;
+template class std::_Flist_const_iterator<_Adl_firewall<_Flist_val<_Flist_simple_types<Evil>>>>;
 
-template class std::_List_iterator<_List_val<_List_simple_types<Evil>>>;
-template class std::_List_const_iterator<_List_val<_List_simple_types<Evil>>>;
+template class std::_List_iterator<_Adl_firewall<_List_val<_List_simple_types<Evil>>>>;
+template class std::_List_const_iterator<_Adl_firewall<_List_val<_List_simple_types<Evil>>>>;
 
-template class std::_Vector_iterator<_Vector_val<_Simple_types<Evil>>>;
-template class std::_Vector_const_iterator<_Vector_val<_Simple_types<Evil>>>;
+template class std::_Vector_iterator<_Adl_firewall<_Vector_val<_Simple_types<Evil>>>>;
+template class std::_Vector_const_iterator<_Adl_firewall<_Vector_val<_Simple_types<Evil>>>>;
 
-template class std::_Tree_iterator<_Tree_val<_Tree_simple_types<pair<const Evil, Evil>>>>;
-template class std::_Tree_const_iterator<_Tree_val<_Tree_simple_types<pair<const Evil, Evil>>>>;
+template class std::_Tree_iterator<_Adl_firewall<_Tree_val<_Tree_simple_types<pair<const Evil, Evil>>>>>;
+template class std::_Tree_const_iterator<_Adl_firewall<_Tree_val<_Tree_simple_types<pair<const Evil, Evil>>>>>;
 
-template class std::_Tree_const_iterator<_Tree_val<_Tree_simple_types<Evil>>>;
+template class std::_Tree_const_iterator<_Adl_firewall<_Tree_val<_Tree_simple_types<Evil>>>>;
 
-template class std::_List_iterator<_List_val<_List_simple_types<pair<const Evil, Evil>>>>;
-template class std::_List_const_iterator<_List_val<_List_simple_types<pair<const Evil, Evil>>>>;
+template class std::_List_iterator<_Adl_firewall<_List_val<_List_simple_types<pair<const Evil, Evil>>>>>;
+template class std::_List_const_iterator<_Adl_firewall<_List_val<_List_simple_types<pair<const Evil, Evil>>>>>;
 
 
-template class std::_Deque_unchecked_iterator<_Deque_val<_Deque_simple_types<Evil>>>;
-template class std::_Deque_unchecked_const_iterator<_Deque_val<_Deque_simple_types<Evil>>>;
+template class std::_Deque_unchecked_iterator<_Adl_firewall<_Deque_val<_Deque_simple_types<Evil>>>>;
+template class std::_Deque_unchecked_const_iterator<_Adl_firewall<_Deque_val<_Deque_simple_types<Evil>>>>;
 
-template class std::_Flist_unchecked_iterator<_Flist_val<_Flist_simple_types<Evil>>>;
-template class std::_Flist_unchecked_const_iterator<_Flist_val<_Flist_simple_types<Evil>>>;
+template class std::_Flist_unchecked_iterator<_Adl_firewall<_Flist_val<_Flist_simple_types<Evil>>>>;
+template class std::_Flist_unchecked_const_iterator<_Adl_firewall<_Flist_val<_Flist_simple_types<Evil>>>>;
 
-template class std::_List_unchecked_iterator<_List_val<_List_simple_types<Evil>>>;
-template class std::_List_unchecked_const_iterator<_List_val<_List_simple_types<Evil>>>;
+template class std::_List_unchecked_iterator<_Adl_firewall<_List_val<_List_simple_types<Evil>>>>;
+template class std::_List_unchecked_const_iterator<_Adl_firewall<_List_val<_List_simple_types<Evil>>>>;
 
-template class std::_Tree_unchecked_iterator<_Tree_val<_Tree_simple_types<pair<const Evil, Evil>>>>;
-template class std::_Tree_unchecked_const_iterator<_Tree_val<_Tree_simple_types<pair<const Evil, Evil>>>>;
+template class std::_Tree_unchecked_iterator<_Adl_firewall<_Tree_val<_Tree_simple_types<pair<const Evil, Evil>>>>>;
+template class std::_Tree_unchecked_const_iterator<
+    _Adl_firewall<_Tree_val<_Tree_simple_types<pair<const Evil, Evil>>>>>;
 
-template class std::_Tree_unchecked_const_iterator<_Tree_val<_Tree_simple_types<Evil>>>;
+template class std::_Tree_unchecked_const_iterator<_Adl_firewall<_Tree_val<_Tree_simple_types<Evil>>>>;
 
-template class std::_List_unchecked_iterator<_List_val<_List_simple_types<pair<const Evil, Evil>>>>;
-template class std::_List_unchecked_const_iterator<_List_val<_List_simple_types<pair<const Evil, Evil>>>>;
+template class std::_List_unchecked_iterator<_Adl_firewall<_List_val<_List_simple_types<pair<const Evil, Evil>>>>>;
+template class std::_List_unchecked_const_iterator<
+    _Adl_firewall<_List_val<_List_simple_types<pair<const Evil, Evil>>>>>;
 
 
 template class std::reverse_iterator<Evil*>;
