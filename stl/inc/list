@@ -21,11 +21,12 @@ _STL_DISABLE_CLANG_WARNINGS
 #undef new
 
 _STD_BEGIN
-template <class _Mylist, class _Base = _Iterator_base0>
+template <class _FirewalledList, class _Base = _Iterator_base0>
 class _List_unchecked_const_iterator : public _Base {
 public:
     using iterator_category = bidirectional_iterator_tag;
 
+    using _Mylist         = typename _FirewalledList::type;
     using _Nodeptr        = typename _Mylist::_Nodeptr;
     using value_type      = typename _Mylist::value_type;
     using difference_type = typename _Mylist::difference_type;
@@ -81,12 +82,13 @@ public:
     _Nodeptr _Ptr; // pointer to node
 };
 
-template <class _Mylist>
-class _List_unchecked_iterator : public _List_unchecked_const_iterator<_Mylist> {
+template <class _FirewalledList>
+class _List_unchecked_iterator : public _List_unchecked_const_iterator<_FirewalledList> {
 public:
-    using _Mybase           = _List_unchecked_const_iterator<_Mylist>;
+    using _Mybase           = _List_unchecked_const_iterator<_FirewalledList>;
     using iterator_category = bidirectional_iterator_tag;
 
+    using _Mylist         = typename _FirewalledList::type;
     using _Nodeptr        = typename _Mylist::_Nodeptr;
     using value_type      = typename _Mylist::value_type;
     using difference_type = typename _Mylist::difference_type;
@@ -126,12 +128,13 @@ public:
     }
 };
 
-template <class _Mylist>
-class _List_const_iterator : public _List_unchecked_const_iterator<_Mylist, _Iterator_base> {
+template <class _FirewalledList>
+class _List_const_iterator : public _List_unchecked_const_iterator<_FirewalledList, _Iterator_base> {
 public:
-    using _Mybase           = _List_unchecked_const_iterator<_Mylist, _Iterator_base>;
+    using _Mybase           = _List_unchecked_const_iterator<_FirewalledList, _Iterator_base>;
     using iterator_category = bidirectional_iterator_tag;
 
+    using _Mylist         = typename _FirewalledList::type;
     using _Nodeptr        = typename _Mylist::_Nodeptr;
     using value_type      = typename _Mylist::value_type;
     using difference_type = typename _Mylist::difference_type;
@@ -211,21 +214,23 @@ public:
 
     using _Prevent_inheriting_unwrap = _List_const_iterator;
 
-    _NODISCARD _List_unchecked_const_iterator<_Mylist> _Unwrapped() const noexcept {
-        return _List_unchecked_const_iterator<_Mylist>(this->_Ptr, static_cast<const _Mylist*>(this->_Getcont()));
+    _NODISCARD _List_unchecked_const_iterator<_FirewalledList> _Unwrapped() const noexcept {
+        return _List_unchecked_const_iterator<_FirewalledList>(
+            this->_Ptr, static_cast<const _Mylist*>(this->_Getcont()));
     }
 
-    void _Seek_to(const _List_unchecked_const_iterator<_Mylist> _It) noexcept {
+    void _Seek_to(const _List_unchecked_const_iterator<_FirewalledList> _It) noexcept {
         this->_Ptr = _It._Ptr;
     }
 };
 
-template <class _Mylist>
-class _List_iterator : public _List_const_iterator<_Mylist> {
+template <class _FirewalledList>
+class _List_iterator : public _List_const_iterator<_FirewalledList> {
 public:
-    using _Mybase           = _List_const_iterator<_Mylist>;
+    using _Mybase           = _List_const_iterator<_FirewalledList>;
     using iterator_category = bidirectional_iterator_tag;
 
+    using _Mylist         = typename _FirewalledList::type;
     using _Nodeptr        = typename _Mylist::_Nodeptr;
     using value_type      = typename _Mylist::value_type;
     using difference_type = typename _Mylist::difference_type;
@@ -266,8 +271,8 @@ public:
 
     using _Prevent_inheriting_unwrap = _List_iterator;
 
-    _NODISCARD _List_unchecked_iterator<_Mylist> _Unwrapped() const noexcept {
-        return _List_unchecked_iterator<_Mylist>(this->_Ptr, static_cast<const _Mylist*>(this->_Getcont()));
+    _NODISCARD _List_unchecked_iterator<_FirewalledList> _Unwrapped() const noexcept {
+        return _List_unchecked_iterator<_FirewalledList>(this->_Ptr, static_cast<const _Mylist*>(this->_Getcont()));
     }
 };
 
@@ -390,7 +395,8 @@ public:
         const auto _Head          = _Myhead;
         while (*_Pnext) {
             _Iterator_base12** _Pnextnext = &(*_Pnext)->_Mynextiter;
-            if (static_cast<_List_const_iterator<_List_val>&>(**_Pnext)._Ptr == _Head) { // iterator is end(), move on
+            if (static_cast<_List_const_iterator<_Adl_firewall<_List_val>>&>(**_Pnext)._Ptr == _Head) {
+                // iterator is end(), move on
                 _Pnext = _Pnextnext;
             } else { // orphan the iterator
                 (*_Pnext)->_Myproxy = nullptr;
@@ -801,10 +807,10 @@ public:
     using reference       = value_type&;
     using const_reference = const value_type&;
 
-    using iterator                  = _List_iterator<_Scary_val>;
-    using const_iterator            = _List_const_iterator<_Scary_val>;
-    using _Unchecked_iterator       = _List_unchecked_iterator<_Scary_val>;
-    using _Unchecked_const_iterator = _List_unchecked_const_iterator<_Scary_val>;
+    using iterator                  = _List_iterator<_Adl_firewall<_Scary_val>>;
+    using const_iterator            = _List_const_iterator<_Adl_firewall<_Scary_val>>;
+    using _Unchecked_iterator       = _List_unchecked_iterator<_Adl_firewall<_Scary_val>>;
+    using _Unchecked_const_iterator = _List_unchecked_const_iterator<_Adl_firewall<_Scary_val>>;
 
     using reverse_iterator       = _STD reverse_iterator<iterator>;
     using const_reverse_iterator = _STD reverse_iterator<const_iterator>;
