@@ -51,6 +51,28 @@ struct _Flat_map_container_provider {
     };
 };
 
+template <class _PairType, class _Functor, class... _ArgTypes>
+auto _Emplace_extractable_dispatch(const _Functor& _Fx, _ArgTypes&&... _Args) {
+    using _Key = _PairType::first_type;
+    if constexpr (_In_place_key_extract_map<_Key, _ArgTypes...>::_Extractable) {
+        if constexpr (sizeof...(_ArgTypes) == 1) { // pair-like case
+            return _Fx(_STD get<0>(_STD forward<_ArgTypes>(_Args)...), _STD get<1>(_STD forward<_ArgTypes>(_Args)...));
+        } else if constexpr (sizeof...(_ArgTypes) == 2) { // key-value case
+            return _Fx(_STD forward<_ArgTypes>(_Args)...);
+        } else { // piecewise-construction case
+            return [&_Fx](piecewise_construct_t, auto&& _Key_tup, auto&& _Mapped_tup) {
+                return [&_Fx, &_Key_tup, &_Mapped_tup]<size_t... Indices>(index_sequence<_Indices...>) {
+                    return _Fx(_STD get<0>(_STD forward<decltype(_Key_tup)>(_Key_tup)),
+                        _STD get<_Indices>(_STD forward<decltype(_Mapped_tup)>(_Mapped_tup))...);
+                }(make_index_sequence<tuple_size_v<remove_reference_t<_MappedTuple>>>{});
+            }(_STD forward<_ArgTypes>(_Args)...);
+        }
+    } else {
+        _PairType _Pr(_STD forward<_ArgTypes>(_Args)...);
+        return _Fx(_STD move(_Pr.first), _STD move(_Pr.second));
+    }
+}
+
 // Implementation
 
 template <bool _IsUnique, class _Key, class _Mapped, class _Compare, class _KeyContainer, class _MappedContainer>
@@ -557,16 +579,19 @@ public:
     iterator emplace_hint(const_iterator _Position, _ArgTypes&&... _Args)
         requires is_constructible_v<value_type, _ArgTypes...>
     {
-        value_type _Val(_STD forward<_ArgTypes>(_Args)...);
-        return _Emplace_hint<false>(_Position, _STD move(_Val.first), _STD move(_Val.second));
+        return _STD _Emplace_extractable_dispatch<value_type>(
+            [this, _Position](auto&&... _EmplaceArgs) {
+                return _Emplace_hint<false>(_Position, _STD forward<decltype(_EmplaceArgs)>(_EmplaceArgs)...);
+            },
+            _STD forward<_ArgTypes>(_Args)...);
     }
 
     iterator insert(const_iterator _Position, const value_type& _Pair_val) {
-        return emplace_hint(_Position, _Pair_val);
+        return _Emplace_hint<false>(_Position, _Pair_val.first, _Pair_val.second);
     }
 
     iterator insert(const_iterator _Position, value_type&& _Pair_val) {
-        return emplace_hint(_Position, _STD move(_Pair_val));
+        return _Emplace_hint<false>(_Position, _STD move(_Pair_val.first), _STD move(_Pair_val.second));
     }
 
     template <class _PairValTy>
@@ -944,17 +969,34 @@ private:
 
         // Insert the new elements at the end
         for (; _First != _Last; ++_First) {
-            value_type _Val = *_First;
-            if constexpr (_Has_guaranteed_push_back<_KeyContainer>) {
-                _Data.keys.push_back(_STD move(_Val.first));
-            } else {
-                _Data.keys.insert(_Data.keys.end(), _STD move(_Val.first));
-            }
+            using _ArgTy = iter_reference_t<_InputIterator>;
 
-            if constexpr (_Has_guaranteed_push_back<_MappedContainer>) {
-                _Data.values.push_back(_STD move(_Val.second));
+            if constexpr (_Pair_like<_ArgTy> && is_convertible_v<_ArgTy, value_type>) {
+                decltype(auto) _Ref = *_First;
+                if constexpr (_Has_guaranteed_push_back<_KeyContainer>) {
+                    _Data.keys.push_back(_STD get<0>(_STD forward<_ArgTy>(_Ref)));
+                } else {
+                    _Data.keys.insert(_Data.keys.end(), _STD get<0>(_STD forward<_ArgTy>(_Ref)));
+                }
+
+                if constexpr (_Has_guaranteed_push_back<_MappedContainer>) {
+                    _Data.values.push_back(_STD get<1>(_STD forward<_ArgTy>(_Ref)));
+                } else {
+                    _Data.values.insert(_Data.values.end(), _STD get<1>(_STD forward<_ArgTy>(_Ref)));
+                }
             } else {
-                _Data.values.insert(_Data.values.end(), _STD move(_Val.second));
+                value_type _Val = *_First;
+                if constexpr (_Has_guaranteed_push_back<_KeyContainer>) {
+                    _Data.keys.push_back(_STD move(_Val.first));
+                } else {
+                    _Data.keys.insert(_Data.keys.end(), _STD move(_Val.first));
+                }
+
+                if constexpr (_Has_guaranteed_push_back<_MappedContainer>) {
+                    _Data.values.push_back(_STD move(_Val.second));
+                } else {
+                    _Data.values.insert(_Data.values.end(), _STD move(_Val.second));
+                }
             }
         }
 
@@ -1170,16 +1212,17 @@ public:
     pair<iterator, bool> emplace(_ArgTypes&&... _Args)
         requires is_constructible_v<value_type, _ArgTypes...>
     {
-        value_type _Val(_STD forward<_ArgTypes>(_Args)...);
-        return try_emplace(_STD move(_Val.first), _STD move(_Val.second));
+        return _STD _Emplace_extractable_dispatch<value_type>([this](auto&&... _EmplaceArgs) //
+            { return _Try_emplace(_STD forward<decltype(_EmplaceArgs)>(_EmplaceArgs)...); },
+            _STD forward<_ArgTypes>(_Args)...);
     }
 
     pair<iterator, bool> insert(const value_type& _Pair_val) {
-        return try_emplace(_Pair_val.first, _Pair_val.second);
+        return _Try_emplace(_Pair_val.first, _Pair_val.second);
     }
 
     pair<iterator, bool> insert(value_type&& _Pair_val) {
-        return try_emplace(_STD move(_Pair_val.first), _STD move(_Pair_val.second));
+        return _Try_emplace(_STD move(_Pair_val.first), _STD move(_Pair_val.second));
     }
 
     template <class _PairValTy>
@@ -1463,8 +1506,11 @@ public:
     iterator emplace(_ArgTypes&&... _Args)
         requires is_constructible_v<value_type, _ArgTypes...>
     {
-        value_type _Val(_STD forward<_ArgTypes>(_Args)...);
-        return _Emplace_key_mapped(_STD move(_Val.first), _STD move(_Val.second));
+        return _STD _Emplace_extractable_dispatch<value_type>(
+            [this](auto&&... _EmplaceArgs) {
+                return _Emplace_key_mapped(_STD forward<decltype(_EmplaceArgs)>(_EmplaceArgs)...);
+            },
+            _STD forward<_ArgTypes>(_Args)...);
     }
 
     iterator insert(const value_type& _Px) {
@@ -1492,14 +1538,14 @@ private:
     friend typename flat_multimap<_KTy, _MTy, _Comp, _KeyCont, _MappedCont>::size_type erase_if(
         flat_multimap<_KTy, _MTy, _Comp, _KeyCont, _MappedCont>&, _Pred);
 
-    template <class _KeyTy, class _MappedTy>
-    iterator _Emplace_key_mapped(_KeyTy&& _Key_val, _MappedTy&& _Mapped_val) {
+    template <class _KeyTy, class... _MappedArgTypes>
+    iterator _Emplace_key_mapped(_KeyTy&& _Key_val, _MappedArgTypes&&... _Mapped_args) {
         const auto _Key_it = _STD upper_bound(_Data.keys.begin(), _Data.keys.end(), _Key_val, _Key_compare);
         const auto _Index  = _Key_it - _Data.keys.begin();
 
         {
             _Key _Key_to_insert(_STD forward<_KeyTy>(_Key_val));
-            _Mapped _Mapped_to_insert(_STD forward<_MappedTy>(_Mapped_val));
+            _Mapped _Mapped_to_insert(_STD forward<_MappedArgTypes>(_Mapped_args)...);
             this->_Insert_exact(_STD cbegin(*this) + _Index, _STD move(_Key_to_insert), _STD move(_Mapped_to_insert));
         }
         return this->begin() + _Index;
