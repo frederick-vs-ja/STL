@@ -8,6 +8,7 @@
 #include <deque>
 #include <forward_list>
 #include <list>
+#include <memory>
 #include <string>
 #include <utility>
 #include <valarray>
@@ -19,6 +20,7 @@
 #endif // _HAS_CXX17
 
 #if _HAS_CXX20
+#include <iterator>
 #include <ranges>
 #include <span>
 #endif // _HAS_CXX20
@@ -26,6 +28,7 @@
 #if _HAS_CXX23
 #include <expected>
 #include <mdspan>
+#include <stacktrace>
 #endif // _HAS_CXX23
 
 #include <test_death.hpp>
@@ -587,6 +590,12 @@ void test_mdspan_subscript_span() {
     const span<const int, 2> sp_idx{a_idx};
     (void) md[sp_idx];
 }
+
+// <stacktrace>
+void test_stacktrace_subscript() {
+    const auto st = stacktrace::current();
+    (void) st[st.size()];
+}
 #endif // _HAS_CXX23
 
 int main(int argc, char* argv[]) {
@@ -704,6 +713,7 @@ int main(int argc, char* argv[]) {
 #endif // ^^^ defined(__cpp_multidimensional_subscript) ^^^
         test_mdspan_subscript_array,
         test_mdspan_subscript_span,
+        test_stacktrace_subscript,
 #endif // _HAS_CXX23
     });
 
