@@ -11,6 +11,10 @@
 #include <type_traits>
 #include <utility>
 
+#if _HAS_CXX26
+#include <optional>
+#endif // _HAS_CXX26
+
 #include <range_algorithm_support.hpp>
 using namespace std;
 
@@ -362,6 +366,46 @@ void test_gh_2312() { // COMPILE-ONLY
     static_assert(same_as<decltype(view | views::reverse), X>);
 }
 
+#if _HAS_CXX26
+// Test that views::reverse just decay-copies optional<View>, per P3913R1.
+constexpr bool test_p3913r1() {
+    { // non-wrapping view
+        auto opt_sv = make_optional("quick"sv);
+
+        same_as<decltype(opt_sv)> decltype(auto) opt_sv2 = opt_sv | views::reverse;
+        assert(opt_sv2->begin() == opt_sv->begin());
+        assert(opt_sv2->end() == opt_sv->end());
+
+        same_as<decltype(opt_sv)> decltype(auto) opt_sv3 = move(opt_sv2) | views::reverse;
+        assert(opt_sv3->begin() == opt_sv->begin());
+        assert(opt_sv3->end() == opt_sv->end());
+    }
+    { // rev_view
+        auto str       = "brown"s;
+        auto opt_ref_v = make_optional(str | views::all);
+
+        same_as<decltype(opt_ref_v)> decltype(auto) opt_ref_v2 = opt_ref_v | views::reverse;
+        assert(&opt_ref_v2.base() == &opt_ref_v.base());
+
+        same_as<decltype(opt_ref_v)> decltype(auto) opt_ref_v3 = move(opt_ref_v) | views::reverse;
+        assert(&opt_ref_v3.base() == &opt_ref_v.base());
+    }
+    { // owning_view
+        auto opt_own_v = make_optional("fox"s | views::all);
+
+        same_as<decltype(opt_own_v)> decltype(auto) opt_own_v2 = move(opt_own_v) | views::reverse;
+        assert(*opt_own_v2 == "fox"sv);
+    }
+    { // optional<NonView> are wrapped
+        same_as<ranges::reverse_view<ranges::owning_view<optional<string>>>> decltype(auto) rev_own =
+            make_optional("jumps"s) | views::reverse;
+        assert(*rev_own.base().base() == "jumps"sv);
+    }
+
+    return true;
+}
+#endif // _HAS_CXX26
+
 int main() {
     static constexpr int some_ints[]     = {0, 1, 2};
     static constexpr int reversed_ints[] = {2, 1, 0};
@@ -405,4 +449,8 @@ int main() {
     // Get full instantiation coverage
     static_assert((test_bidi<instantiator, const int>(), true));
     test_bidi<instantiator, const int>();
+#if _HAS_CXX26
+    static_assert(test_p3913r1());
+    test_p3913r1();
+#endif // _HAS_CXX26
 }
