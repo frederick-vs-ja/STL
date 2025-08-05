@@ -705,6 +705,12 @@ STATIC_ASSERT(__cpp_lib_optional == 201606L);
 #error __cpp_lib_optional is defined
 #endif
 
+#if _HAS_CXX26
+STATIC_ASSERT(__cpp_lib_optional_range_support == 202406L);
+#elif defined(__cpp_lib_optional_range_support)
+#error __cpp_lib_optional_range_support is defined
+#endif
+
 #if _HAS_CXX23
 STATIC_ASSERT(__cpp_lib_out_ptr == 202311L);
 #elif defined(__cpp_lib_out_ptr)
