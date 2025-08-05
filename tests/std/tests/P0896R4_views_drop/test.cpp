@@ -11,6 +11,10 @@
 #include <utility>
 #include <vector>
 
+#if _HAS_CXX26
+#include <optional>
+#endif // _HAS_CXX26
+
 #include <range_algorithm_support.hpp>
 using namespace std;
 
@@ -507,6 +511,72 @@ constexpr void output_range_test() {
     assert(ranges::equal(some_writable_ints, initializer_list<int>{0, 1, 42, 42}));
 }
 
+#if _HAS_CXX26
+// Test that views::drop either decay-copies optional<View> or returns an empty value of it, per P3913R1.
+constexpr bool test_p3913r1() {
+    { // non-wrapping view
+        auto opt_sv = make_optional("quick"sv);
+
+        same_as<decltype(opt_sv)> decltype(auto) opt_sv2 = opt_sv | views::drop(0);
+        assert(opt_sv2->begin() == opt_sv->begin());
+        assert(opt_sv2->end() == opt_sv->end());
+
+        same_as<decltype(opt_sv)> decltype(auto) opt_sv3 = move(opt_sv2) | views::drop(0);
+        assert(opt_sv3->begin() == opt_sv->begin());
+        assert(opt_sv3->end() == opt_sv->end());
+    }
+    { // non-wrapping view, dropping positive as empty optional
+        auto opt_sv = make_optional("quick"sv);
+
+        same_as<decltype(opt_sv)> decltype(auto) opt_sv2 = opt_sv | views::drop(1);
+        assert(!opt_sv2.has_value());
+
+        same_as<decltype(opt_sv)> decltype(auto) opt_sv3 = move(opt_sv2) | views::drop(2);
+        assert(!opt_sv3.has_value());
+    }
+    { // rev_view
+        auto str       = "brown"s;
+        auto opt_ref_v = make_optional(str | views::all);
+
+        same_as<decltype(opt_ref_v)> decltype(auto) opt_ref_v2 = opt_ref_v | views::drop(0);
+        assert(&opt_ref_v2.base() == &opt_ref_v.base());
+
+        same_as<decltype(opt_ref_v)> decltype(auto) opt_ref_v3 = move(opt_ref_v) | views::drop(0);
+        assert(&opt_ref_v3.base() == &opt_ref_v.base());
+    }
+    { // rev_view, dropping positive as empty optional
+        auto str       = "brown"s;
+        auto opt_ref_v = make_optional(str | views::all);
+
+        same_as<decltype(opt_ref_v)> decltype(auto) opt_ref_v2 = opt_ref_v | views::drop(3);
+        assert(!opt_ref_v2.has_value());
+
+        same_as<decltype(opt_ref_v)> decltype(auto) opt_ref_v3 = move(opt_ref_v) | views::drop(4);
+        assert(!opt_ref_v3.has_value());
+    }
+    { // owning_view
+        auto opt_own_v = make_optional("fox"s | views::all);
+
+        same_as<decltype(opt_own_v)> decltype(auto) opt_own_v2 = move(opt_own_v) | views::drop(0);
+        assert(*opt_own_v2 == "fox"sv);
+    }
+    { // owning_view, dropping positive as empty optional
+        auto opt_own_v = make_optional("fox"s | views::all);
+
+        same_as<decltype(opt_own_v)> decltype(auto) opt_own_v2 = move(opt_own_v) | views::drop(5);
+        assert(!opt_own_v2.has_value());
+        assert(*opt_own_v == "fox"sv); // opt_own_v is not moved
+    }
+    { // optional<NonView> are wrapped
+        same_as<ranges::reverse_view<ranges::owning_view<optional<string>>>> decltype(auto) rev_own =
+            make_optional("jumps"s) | views::drop(0);
+        assert(*rev_own.base().base() == "jumps"sv);
+    }
+
+    return true;
+}
+#endif // _HAS_CXX26
+
 int main() {
     // Validate views
     { // ... copyable
@@ -572,4 +642,9 @@ int main() {
         auto r2 = s | views::drop(evil_convertible_to_difference{});
         assert(ranges::equal(r2, only_four_ints));
     }
+
+#if _HAS_CXX26
+    static_assert(test_p3913r1());
+    test_p3913r1();
+#endif // _HAS_CXX26
 }

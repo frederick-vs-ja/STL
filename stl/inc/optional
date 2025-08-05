@@ -10,6 +10,9 @@
 #if !_HAS_CXX17
 _EMIT_STL_WARNING(STL4038, "The contents of <optional> are available only with C++17 or later.");
 #else // ^^^ !_HAS_CXX17 / _HAS_CXX17 vvv
+#if _HAS_CXX26
+#include <__msvc_formatter.hpp>
+#endif // _HAS_CXX26
 #if _HAS_CXX20
 #include <compare>
 #endif // _HAS_CXX20
@@ -52,6 +55,214 @@ protected:
 [[noreturn]] inline void _Throw_bad_optional_access() {
     _THROW(bad_optional_access{});
 }
+
+#if _HAS_CXX26
+// The intent is to make newly added iterators of form _Some_iter<_Adl_firewalled<_Ty>>,
+// which forbids ADL on _Ty and makes std::_Adl_isolation the only associated namespace.
+// So ADL-dependent mechanisms for these iterator types will work for ADL-unfriendly _Ty,
+// and it will be possible to make the ADL not find any non-member function provided in standard namespaces.
+namespace _Adl_isolation {
+    template <class _Ty>
+    struct _Firewall {
+        struct _Type {
+            using type = _Ty;
+        };
+    };
+} // namespace _Adl_isolation
+
+template <class _Ty>
+using _Adl_firewalled = _Adl_isolation::_Firewall<_Ty>::_Type;
+
+_EXPORT_STD template <class _Ty>
+class optional;
+
+namespace _Optional_details {
+    template <bool _IsConst, class _FirewalledTy>
+    class _Iterator {
+    private:
+        using _Element_type = typename _FirewalledTy::type;
+
+        _STL_INTERNAL_STATIC_ASSERT(_IsConst || !is_const_v<_Element_type>);
+
+    public:
+        using iterator_concept  = contiguous_iterator_tag;
+        using iterator_category = random_access_iterator_tag;
+        using value_type        = remove_cv_t<_Element_type>;
+        using difference_type   = ptrdiff_t;
+        using pointer           = _Maybe_const<_IsConst, _Element_type>*;
+        using reference         = _Maybe_const<_IsConst, _Element_type>&;
+
+        _Iterator() = default;
+
+        _NODISCARD constexpr operator _Iterator<true, _FirewalledTy>() const noexcept
+            requires (!_IsConst)
+        {
+            return _Iterator<true, _FirewalledTy>{_Ptr, _Can_increase, _Increased};
+        }
+
+        _NODISCARD constexpr reference operator*() const noexcept {
+#if _ITERATOR_DEBUG_LEVEL != 0
+            _STL_VERIFY(_Ptr, "cannot dereference optional vector iterator");
+            _STL_VERIFY(_Can_increase, "cannot dereference optional iterator from a valueless optional");
+            _STL_VERIFY(!_Increased, "cannot dereference a past end optional iterator");
+#endif // _ITERATOR_DEBUG_LEVEL != 0
+
+            return *_Ptr;
+        }
+
+        _NODISCARD constexpr pointer operator->() const noexcept {
+#if _ITERATOR_DEBUG_LEVEL != 0
+            _STL_VERIFY(_Ptr, "cannot dereference optional vector iterator");
+            _STL_VERIFY(_Can_increase, "cannot dereference optional iterator from a valueless optional");
+            _STL_VERIFY(!_Increased, "cannot dereference a past end optional iterator");
+#endif // _ITERATOR_DEBUG_LEVEL != 0
+
+            return _Ptr;
+        }
+
+        constexpr _Iterator& operator++() noexcept {
+#if _ITERATOR_DEBUG_LEVEL != 0
+            _STL_VERIFY(_Ptr, "cannot increment value-initialized optional iterator");
+            _STL_VERIFY(_Can_increase, "cannot increment optional iterator  from a valueless optional");
+            _STL_VERIFY(!_Increased, "cannot increment a past end optional iterator");
+#endif // _ITERATOR_DEBUG_LEVEL != 0
+
+            _Increased = true;
+            return *this;
+        }
+
+        constexpr _Iterator operator++(int) noexcept {
+            auto _Old = *this;
+            ++*this;
+            return _Old;
+        }
+
+        constexpr _Iterator& operator--() noexcept {
+#if _ITERATOR_DEBUG_LEVEL != 0
+            _STL_VERIFY(_Ptr, "cannot decrement value-initialized optional iterator");
+            _STL_VERIFY(_Can_increase, "cannot decrement optional iterator  from a valueless optional");
+            _STL_VERIFY(_Increased, "cannot decrement a beginning optional iterator");
+#endif // _ITERATOR_DEBUG_LEVEL != 0
+
+            _Increased = false;
+            return *this;
+        }
+
+        constexpr _Iterator operator--(int) noexcept {
+            auto _Old = *this;
+            --*this;
+            return _Old;
+        }
+
+        constexpr _Iterator& operator+=(const difference_type _Off) noexcept {
+            _Verify_offset(_Off);
+            if (_Off != 0) {
+                _Increased = _Off > 0;
+            }
+            return *this;
+        }
+
+        _NODISCARD friend constexpr _Iterator operator+(const _Iterator& _Iter, const difference_type _Off) noexcept {
+            auto _Tmp = _Iter;
+            _Tmp += _Off;
+            return _Tmp;
+        }
+
+        _NODISCARD friend constexpr _Iterator operator+(const difference_type _Off, const _Iterator& _Iter) noexcept {
+            auto _Tmp = _Iter;
+            _Tmp += _Off;
+            return _Tmp;
+        }
+
+        constexpr _Iterator& operator-=(const difference_type _Off) noexcept {
+            return *this += -_Off;
+        }
+
+        _NODISCARD friend constexpr _Iterator operator-(const _Iterator& _Iter, const difference_type _Off) noexcept {
+            auto _Tmp = _Iter;
+            _Tmp -= _Off;
+            return _Tmp;
+        }
+
+        _NODISCARD friend constexpr difference_type operator-(
+            const _Iterator& _Left, const _Iterator& _Right) noexcept {
+            _Left._Compat(_Right);
+            return _Left._Increased - _Right._Increased;
+        }
+
+        _NODISCARD constexpr reference operator[](const difference_type _Off) const noexcept {
+            return *(*this + _Off);
+        }
+
+        _NODISCARD friend constexpr bool operator==(const _Iterator& _Left, const _Iterator& _Right) noexcept {
+            _Left._Compat(_Right);
+            return _Left._Increased == _Right._Increased;
+        }
+
+        _NODISCARD friend constexpr strong_ordering operator<=>(
+            const _Iterator& _Left, const _Iterator& _Right) noexcept {
+            _Left._Compat(_Right);
+            return _Left._Increased <=> _Right._Increased;
+        }
+
+#if _ITERATOR_DEBUG_LEVEL != 0
+        friend constexpr void _Verify_range(const _Iterator& _Left, const _Iterator& _Right) noexcept {
+            _Left._Compat(_Right);
+            _STL_VERIFY(_Left._Increased <= _Right._Increased, "optional iterator range transposed");
+        }
+#endif // _ITERATOR_DEBUG_LEVEL != 0
+
+        using _Prevent_inheriting_unwrap = _Iterator;
+
+        _NODISCARD constexpr pointer _Unwrapped() const noexcept {
+            return _Ptr + static_cast<ptrdiff_t>(_Increased);
+        }
+
+        constexpr void _Seek_to(const pointer _Dst_ptr) noexcept {
+            _Increased = _Dst_ptr > _Ptr;
+        }
+
+    private:
+        friend optional<_Element_type>;
+        friend pointer_traits<_Iterator>;
+        friend _Iterator<!_IsConst, _FirewalledTy>;
+
+        constexpr explicit _Iterator(const pointer _Pval, const bool _Has_val, const bool _At_end) noexcept
+            : _Ptr(_Pval), _Can_increase(_Has_val), _Increased(_Has_val && _At_end) {}
+
+        constexpr void _Verify_offset([[maybe_unused]] const difference_type _Off) const noexcept {
+#if _ITERATOR_DEBUG_LEVEL != 0
+            _STL_VERIFY(_Off >= -1 || _Off <= 1, "cannot seek optional iterator with invalid offset");
+            _STL_VERIFY(_Off == -1 && _Can_increase && _Increased, "cannot seek optional iterator before begin");
+            _STL_VERIFY(_Off == 1 && _Can_increase && !_Increased, "cannot seek optional iterator after end");
+#endif // _ITERATOR_DEBUG_LEVEL != 0
+        }
+
+        constexpr void _Compat([[maybe_unused]] const _Iterator& _Right) const noexcept {
+// verify compatibility of iterator pair
+#if _ITERATOR_DEBUG_LEVEL != 0
+            _STL_VERIFY(
+                _Ptr == _Right._Ptr && _Can_increase == _Right._Can_increase, "optional iterators incompatible");
+#endif // _ITERATOR_DEBUG_LEVEL != 0
+        }
+
+        pointer _Ptr       = nullptr;
+        bool _Can_increase = false;
+        bool _Increased    = false;
+    };
+} // namespace _Optional_details
+
+template <bool _IsConst, class _FirewalledTy>
+struct pointer_traits<_Optional_details::_Iterator<_IsConst, _FirewalledTy>> {
+    using pointer         = _Optional_details::_Iterator<_IsConst, _FirewalledTy>;
+    using element_type    = _Maybe_const<_IsConst, typename _FirewalledTy::type>;
+    using difference_type = ptrdiff_t;
+
+    _NODISCARD static constexpr element_type* to_address(const pointer _Iter) noexcept {
+        return _Iter._Ptr + static_cast<ptrdiff_t>(_Iter._Increased);
+    }
+};
+#endif // _HAS_CXX26
 
 struct _Nontrivial_dummy_type {
     constexpr _Nontrivial_dummy_type() noexcept {
@@ -245,6 +456,10 @@ public:
         "T in optional<T> must meet the Cpp17Destructible requirements (N4950 [optional.optional.general]/3).");
 
     using value_type = _Ty;
+#if _HAS_CXX26
+    using iterator       = _Optional_details::_Iterator<is_const_v<_Ty>, _Adl_firewalled<_Ty>>;
+    using const_iterator = _Optional_details::_Iterator<true, _Adl_firewalled<_Ty>>;
+#endif // _HAS_CXX26
 
     constexpr optional() noexcept {}
     constexpr optional(nullopt_t) noexcept {}
@@ -388,6 +603,22 @@ public:
             }
         }
     }
+
+#if _HAS_CXX26
+    constexpr iterator begin() noexcept {
+        return iterator{_STD addressof(this->_Value), this->_Has_value, false};
+    }
+    constexpr const_iterator begin() const noexcept {
+        return const_iterator{_STD addressof(this->_Value), this->_Has_value, false};
+    }
+
+    constexpr iterator end() noexcept {
+        return iterator{_STD addressof(this->_Value), this->_Has_value, true};
+    }
+    constexpr const_iterator end() const noexcept {
+        return const_iterator{_STD addressof(this->_Value), this->_Has_value, true};
+    }
+#endif // _HAS_CXX26
 
     _NODISCARD constexpr const _Ty* operator->() const noexcept {
 #if _MSVC_STL_HARDENING_OPTIONAL || _ITERATOR_DEBUG_LEVEL != 0
@@ -642,6 +873,19 @@ public:
 
 template <class _Ty>
 optional(_Ty) -> optional<_Ty>;
+
+#if _HAS_CXX26
+namespace ranges { // TRANSITION, DevCom-1650563, should avoid opening namespace ranges
+    template <class _Ty>
+    constexpr bool enable_view<optional<_Ty>> = true;
+
+    template <class _Ty>
+    constexpr bool _Is_optional_of_view<optional<_Ty>> = true; // used for various range adaptors
+} // namespace ranges
+
+template <class _Ty>
+constexpr range_format format_kind<optional<_Ty>> = range_format::disabled;
+#endif // _HAS_CXX26
 
 _EXPORT_STD template <class _Ty1, class _Ty2>
 _NODISCARD constexpr bool operator==(const optional<_Ty1>& _Left, const optional<_Ty2>& _Right)

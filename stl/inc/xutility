@@ -4368,6 +4368,11 @@ namespace ranges {
 
     _EXPORT_STD template <range _Rng>
     using borrowed_subrange_t = conditional_t<borrowed_range<_Rng>, subrange<iterator_t<_Rng>>, dangling>;
+
+#if _HAS_CXX26
+    template <class>
+    constexpr bool _Is_optional_of_view = false; // used for various range adaptors
+#endif // _HAS_CXX26
 } // namespace ranges
 #endif // _HAS_CXX20
 
