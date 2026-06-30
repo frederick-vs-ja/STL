@@ -1134,6 +1134,12 @@ void test_utility() {
 
     static_assert(is_same_v<make_integer_sequence<int, 4>, integer_sequence<int, 0, 1, 2, 3>>);
     static_assert(is_same_v<decltype(declval<short>() + declval<unsigned short>()), int>);
+
+#if TEST_STANDARD >= 26
+    auto cw_1000 = cw<1000>;
+    auto cw_729  = constant_wrapper<729L>{};
+    static_assert(cw_1000 + cw_729 - cw<1728L> == constant_wrapper<1LL>{});
+#endif // TEST_STANDARD >=26
 }
 
 void test_valarray() {

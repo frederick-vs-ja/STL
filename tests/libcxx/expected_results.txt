@@ -361,13 +361,14 @@ std/time/time.hash/time.hash_enabled.pass.cpp FAIL
 std/utilities/function.objects/func.bind.partial/bind_front.nttp.pass.cpp FAIL
 
 # P2781R9 constant_wrapper
+# Implementation divergence: MSVC STL's comparison category types are structural, while other implementations' are not.
+std/utilities/const.wrap.class/comp.pass.cpp FAIL
 # Add 'std-at-least-c++26' to tests/utils/stl/test/tests.py when beginning work on C++26.
 std/utilities/const.wrap.class/adl.compile.pass.cpp FAIL
 std/utilities/const.wrap.class/assign.pass.cpp FAIL
 std/utilities/const.wrap.class/binary_ops.pass.cpp FAIL
 std/utilities/const.wrap.class/call.pass.cpp FAIL
 std/utilities/const.wrap.class/comma.pass.cpp FAIL
-std/utilities/const.wrap.class/comp.pass.cpp FAIL
 std/utilities/const.wrap.class/convert.pass.cpp FAIL
 std/utilities/const.wrap.class/cw.pass.cpp FAIL
 std/utilities/const.wrap.class/general.pass.cpp FAIL
