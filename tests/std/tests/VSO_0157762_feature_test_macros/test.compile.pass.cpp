@@ -203,6 +203,12 @@ STATIC_ASSERT(__cpp_lib_concepts == 202207L);
 #error __cpp_lib_concepts is defined
 #endif
 
+#if _HAS_CXX26
+STATIC_ASSERT(__cpp_lib_constant_wrapper == 202606L);
+#elif defined(__cpp_lib_constant_wrapper)
+#error __cpp_lib_constant_wrapper is defined
+#endif
+
 #if _HAS_CXX20
 STATIC_ASSERT(__cpp_lib_constexpr_algorithms == 201806L);
 #elif defined(__cpp_lib_constexpr_algorithms)
