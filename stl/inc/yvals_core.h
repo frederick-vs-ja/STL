@@ -410,6 +410,11 @@
 //     (partial implementation; see GH-4924)
 // P3567R2 flat_meow Fixes
 
+// _HAS_CXX26 directly controls:
+// P2781R9 constant_wrapper
+// P3978R3 constant_wrapper Should Unwrap On Call And Subscript
+// P4206R0 Revert String Support In constant_wrapper
+
 // Parallel Algorithms Notes
 // C++ allows an implementation to implement parallel algorithms as calls to the serial algorithms.
 // This implementation parallelizes several common algorithm calls, but not all.
@@ -1798,6 +1803,11 @@ _EMIT_STL_ERROR(STL1004, "C++98 unexpected() is incompatible with C++23 unexpect
 #define __cpp_lib_tuple_like                  202207L
 #define __cpp_lib_unreachable                 202202L
 #endif // _HAS_CXX23
+
+// C++26
+#if _HAS_CXX26
+#define __cpp_lib_constant_wrapper 202606L
+#endif // _HAS_CXX26
 
 // macros with language mode sensitivity
 #if _HAS_CXX20

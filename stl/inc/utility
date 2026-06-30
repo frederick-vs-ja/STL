@@ -1056,6 +1056,371 @@ struct hash<monostate> {
     }
 };
 #endif // _HAS_CXX17
+
+#if _HAS_CXX26
+_EXPORT_STD template <auto _Val, class _Ty =
+#if defined(__clang__) || defined(__EDG__) // TRANSITION, DevCom-11116925
+                                     decltype(_Val)
+#else // ^^^ no workaround / workaround vvv
+                                     decltype(auto(_Val))
+#endif // ^^^ workaround ^^^
+    >
+struct constant_wrapper;
+
+template <class _Ty>
+concept _Constexpr_param = requires { typename constant_wrapper<_Ty::value>; };
+
+struct _Cw_operators {
+    template <_Constexpr_param _Ty>
+    _NODISCARD friend constexpr auto operator+(_Ty) noexcept -> constant_wrapper<+_Ty::value> {
+        return {};
+    }
+    template <_Constexpr_param _Ty>
+    _NODISCARD friend constexpr auto operator-(_Ty) noexcept -> constant_wrapper<-_Ty::value> {
+        return {};
+    }
+    template <_Constexpr_param _Ty>
+    _NODISCARD friend constexpr auto operator~(_Ty) noexcept -> constant_wrapper<~_Ty::value> {
+        return {};
+    }
+    template <_Constexpr_param _Ty>
+    _NODISCARD friend constexpr auto operator!(_Ty) noexcept -> constant_wrapper<!_Ty::value> {
+        return {};
+    }
+    template <_Constexpr_param _Ty>
+    _NODISCARD friend constexpr auto operator&(_Ty) noexcept -> constant_wrapper<&_Ty::value> {
+        return {};
+    }
+
+    template <_Constexpr_param _Ty>
+    _NODISCARD friend constexpr auto operator*(_Ty) noexcept -> constant_wrapper<*_Ty::value> {
+        return {};
+    }
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+    _NODISCARD friend constexpr auto operator+(_Lty, _Rty) noexcept ->
+#if defined(__clang__) || defined(__EDG__) // TRANSITION, DevCom-11118675
+        constant_wrapper<_Lty::value + _Rty::value>
+#else // ^^^ no workaround / workaround vvv
+        constant_wrapper<auto(_Lty::value + _Rty::value)>
+#endif // ^^^ workaround ^^^
+    {
+        return {};
+    }
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+    _NODISCARD friend constexpr auto operator-(_Lty, _Rty) noexcept -> constant_wrapper<_Lty::value - _Rty::value> {
+        return {};
+    }
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+    _NODISCARD friend constexpr auto operator*(_Lty, _Rty) noexcept -> constant_wrapper<_Lty::value * _Rty::value> {
+        return {};
+    }
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+    _NODISCARD friend constexpr auto operator/(_Lty, _Rty) noexcept -> constant_wrapper<_Lty::value / _Rty::value> {
+        return {};
+    }
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+    _NODISCARD friend constexpr auto operator%(_Lty, _Rty) noexcept -> constant_wrapper<_Lty::value % _Rty::value> {
+        return {};
+    }
+
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+    _NODISCARD friend constexpr auto operator<<(_Lty, _Rty) noexcept -> constant_wrapper<(_Lty::value << _Rty::value)> {
+        return {};
+    }
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+    _NODISCARD friend constexpr auto operator>>(_Lty, _Rty) noexcept -> constant_wrapper<(_Lty::value >> _Rty::value)> {
+        return {};
+    }
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+    _NODISCARD friend constexpr auto operator&(_Lty, _Rty) noexcept -> constant_wrapper<_Lty::value & _Rty::value> {
+        return {};
+    }
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+    _NODISCARD friend constexpr auto operator|(_Lty, _Rty) noexcept -> constant_wrapper<_Lty::value | _Rty::value> {
+        return {};
+    }
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+    _NODISCARD friend constexpr auto operator^(_Lty, _Rty) noexcept -> constant_wrapper<_Lty::value ^ _Rty::value> {
+        return {};
+    }
+
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+        requires (!is_constructible_v<bool, decltype(_Lty::value)> || !is_constructible_v<bool, decltype(_Rty::value)>)
+    _NODISCARD friend constexpr auto operator&&(_Lty, _Rty) noexcept -> constant_wrapper<_Lty::value && _Rty::value> {
+        return {};
+    }
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+        requires (!is_constructible_v<bool, decltype(_Lty::value)> || !is_constructible_v<bool, decltype(_Rty::value)>)
+    _NODISCARD friend constexpr auto operator||(_Lty, _Rty) noexcept -> constant_wrapper<_Lty::value || _Rty::value> {
+        return {};
+    }
+
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+    _NODISCARD friend constexpr auto operator<=>(_Lty, _Rty) noexcept
+        -> constant_wrapper<(_Lty::value <=> _Rty::value)> {
+        return {};
+    }
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+    _NODISCARD friend constexpr auto operator<(_Lty, _Rty) noexcept -> constant_wrapper<(_Lty::value < _Rty::value)> {
+        return {};
+    }
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+    _NODISCARD friend constexpr auto operator<=(_Lty, _Rty) noexcept -> constant_wrapper<(_Lty::value <= _Rty::value)> {
+        return {};
+    }
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+    _NODISCARD friend constexpr auto operator==(_Lty, _Rty) noexcept -> constant_wrapper<_Lty::value == _Rty::value> {
+        return {};
+    }
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+    _NODISCARD friend constexpr auto operator!=(_Lty, _Rty) noexcept -> constant_wrapper<_Lty::value != _Rty::value> {
+        return {};
+    }
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+    _NODISCARD friend constexpr auto operator>(_Lty, _Rty) noexcept -> constant_wrapper<(_Lty::value > _Rty::value)> {
+        return {};
+    }
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+    _NODISCARD friend constexpr auto operator>=(_Lty, _Rty) noexcept -> constant_wrapper<(_Lty::value >= _Rty::value)> {
+        return {};
+    }
+
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+    friend auto operator,(_Lty, _Rty) = delete;
+    template <_Constexpr_param _Lty, _Constexpr_param _Rty>
+    _NODISCARD friend constexpr auto operator->*(_Lty, _Rty) noexcept -> constant_wrapper<(_Lty::value->*_Rty::value)> {
+        return {};
+    }
+
+    template <_Constexpr_param _Ty>
+    _NODISCARD constexpr auto operator++(this _Ty) noexcept -> constant_wrapper<++_Ty::value> {
+        return {};
+    }
+    template <_Constexpr_param _Ty>
+    _NODISCARD constexpr auto operator++(this _Ty, int) noexcept -> constant_wrapper<_Ty::value++> {
+        return {};
+    }
+    template <_Constexpr_param _Ty>
+    _NODISCARD constexpr auto operator--(this _Ty) noexcept -> constant_wrapper<--_Ty::value> {
+        return {};
+    }
+    template <_Constexpr_param _Ty>
+    _NODISCARD constexpr auto operator--(this _Ty, int) noexcept -> constant_wrapper<_Ty::value--> {
+        return {};
+    }
+
+    template <_Constexpr_param _Ty, _Constexpr_param _Rty
+#if !defined(__clang__) && !defined(__EDG__) // TRANSITION, Dev-11118370
+        ,
+        class = constant_wrapper<(_Ty::value += _Rty::value)>
+#endif // ^^^ workaround ^^^
+        >
+    _NODISCARD constexpr auto operator+=(this _Ty, _Rty) noexcept ->
+#if defined(__clang__) && !defined(__EDG__) // TRANSITION, LLVM-202693 (fixed in Clang 23)
+        constant_wrapper<auto(_Ty::value += _Rty::value)>
+#else // ^^^ workaround / no workaround vvv
+        constant_wrapper<(_Ty::value += _Rty::value)>
+#endif // ^^^ no workaround ^^^
+    {
+        return {};
+    }
+    template <_Constexpr_param _Ty, _Constexpr_param _Rty
+#if !defined(__clang__) && !defined(__EDG__) // TRANSITION, Dev-11118370
+        ,
+        class = constant_wrapper<(_Ty::value -= _Rty::value)>
+#endif // ^^^ workaround ^^^
+        >
+    _NODISCARD constexpr auto operator-=(this _Ty, _Rty) noexcept ->
+#if defined(__clang__) && !defined(__EDG__) // TRANSITION, LLVM-202693 (fixed in Clang 23)
+        constant_wrapper<auto(_Ty::value -= _Rty::value)>
+#else // ^^^ workaround / no workaround vvv
+        constant_wrapper<(_Ty::value -= _Rty::value)>
+#endif // ^^^ no workaround ^^^
+    {
+        return {};
+    }
+    template <_Constexpr_param _Ty, _Constexpr_param _Rty
+#if !defined(__clang__) && !defined(__EDG__) // TRANSITION, Dev-11118370
+        ,
+        class = constant_wrapper<(_Ty::value *= _Rty::value)>
+#endif // ^^^ workaround ^^^
+        >
+    _NODISCARD constexpr auto operator*=(this _Ty, _Rty) noexcept ->
+#if defined(__clang__) && !defined(__EDG__) // TRANSITION, LLVM-202693 (fixed in Clang 23)
+        constant_wrapper<auto(_Ty::value *= _Rty::value)>
+#else // ^^^ workaround / no workaround vvv
+        constant_wrapper<(_Ty::value *= _Rty::value)>
+#endif // ^^^ no workaround ^^^
+    {
+        return {};
+    }
+    template <_Constexpr_param _Ty, _Constexpr_param _Rty
+#if !defined(__clang__) && !defined(__EDG__) // TRANSITION, Dev-11118370
+        ,
+        class = constant_wrapper<(_Ty::value /= _Rty::value)>
+#endif // ^^^ workaround ^^^
+        >
+    _NODISCARD constexpr auto operator/=(this _Ty, _Rty) noexcept ->
+#if defined(__clang__) && !defined(__EDG__) // TRANSITION, LLVM-202693 (fixed in Clang 23)
+        constant_wrapper<auto(_Ty::value /= _Rty::value)>
+#else // ^^^ workaround / no workaround vvv
+        constant_wrapper<(_Ty::value /= _Rty::value)>
+#endif // ^^^ no workaround ^^^
+    {
+        return {};
+    }
+    template <_Constexpr_param _Ty, _Constexpr_param _Rty
+#if !defined(__clang__) && !defined(__EDG__) // TRANSITION, Dev-11118370
+        ,
+        class = constant_wrapper<(_Ty::value %= _Rty::value)>
+#endif // ^^^ workaround ^^^
+        >
+    _NODISCARD constexpr auto operator%=(this _Ty, _Rty) noexcept ->
+#if defined(__clang__) && !defined(__EDG__) // TRANSITION, LLVM-202693 (fixed in Clang 23)
+        constant_wrapper<auto(_Ty::value %= _Rty::value)>
+#else // ^^^ workaround / no workaround vvv
+        constant_wrapper<(_Ty::value %= _Rty::value)>
+#endif // ^^^ no workaround ^^^
+    {
+        return {};
+    }
+    template <_Constexpr_param _Ty, _Constexpr_param _Rty
+#if !defined(__clang__) && !defined(__EDG__) // TRANSITION, Dev-11118370
+        ,
+        class = constant_wrapper<(_Ty::value &= _Rty::value)>
+#endif // ^^^ workaround ^^^
+        >
+    _NODISCARD constexpr auto operator&=(this _Ty, _Rty) noexcept ->
+#if defined(__clang__) && !defined(__EDG__) // TRANSITION, LLVM-202693 (fixed in Clang 23)
+        constant_wrapper<auto(_Ty::value &= _Rty::value)>
+#else // ^^^ workaround / no workaround vvv
+        constant_wrapper<(_Ty::value &= _Rty::value)>
+#endif // ^^^ no workaround ^^^
+    {
+        return {};
+    }
+    template <_Constexpr_param _Ty, _Constexpr_param _Rty
+#if !defined(__clang__) && !defined(__EDG__) // TRANSITION, Dev-11118370
+        ,
+        class = constant_wrapper<(_Ty::value |= _Rty::value)>
+#endif // ^^^ workaround ^^^
+        >
+    _NODISCARD constexpr auto operator|=(this _Ty, _Rty) noexcept ->
+#if defined(__clang__) && !defined(__EDG__) // TRANSITION, LLVM-202693 (fixed in Clang 23)
+        constant_wrapper<auto(_Ty::value |= _Rty::value)>
+#else // ^^^ workaround / no workaround vvv
+        constant_wrapper<(_Ty::value |= _Rty::value)>
+#endif // ^^^ no workaround ^^^
+    {
+        return {};
+    }
+    template <_Constexpr_param _Ty, _Constexpr_param _Rty
+#if !defined(__clang__) && !defined(__EDG__) // TRANSITION, Dev-11118370
+        ,
+        class = constant_wrapper<(_Ty::value ^= _Rty::value)>
+#endif // ^^^ workaround ^^^
+        >
+    _NODISCARD constexpr auto operator^=(this _Ty, _Rty) noexcept ->
+#if defined(__clang__) && !defined(__EDG__) // TRANSITION, LLVM-202693 (fixed in Clang 23)
+        constant_wrapper<auto(_Ty::value ^= _Rty::value)>
+#else // ^^^ workaround / no workaround vvv
+        constant_wrapper<(_Ty::value ^= _Rty::value)>
+#endif // ^^^ no workaround ^^^
+    {
+        return {};
+    }
+    template <_Constexpr_param _Ty, _Constexpr_param _Rty
+#if !defined(__clang__) && !defined(__EDG__) // TRANSITION, Dev-11118370
+        ,
+        class = constant_wrapper<(_Ty::value <<= _Rty::value)>
+#endif // ^^^ workaround ^^^
+        >
+    _NODISCARD constexpr auto operator<<=(this _Ty, _Rty) noexcept ->
+#if defined(__clang__) && !defined(__EDG__) // TRANSITION, LLVM-202693 (fixed in Clang 23)
+        constant_wrapper<auto(_Ty::value <<= _Rty::value)>
+#else // ^^^ workaround / no workaround vvv
+        constant_wrapper<(_Ty::value <<= _Rty::value)>
+#endif // ^^^ no workaround ^^^
+    {
+        return {};
+    }
+    template <_Constexpr_param _Ty, _Constexpr_param _Rty
+#if !defined(__clang__) && !defined(__EDG__) // TRANSITION, Dev-11118370
+        ,
+        class = constant_wrapper<(_Ty::value >>= _Rty::value)>
+#endif // ^^^ workaround ^^^
+        >
+    _NODISCARD constexpr auto operator>>=(this _Ty, _Rty) noexcept ->
+#if defined(__clang__) && !defined(__EDG__) // TRANSITION, LLVM-202693 (fixed in Clang 23)
+        constant_wrapper<auto(_Ty::value >>= _Rty::value)>
+#else // ^^^ workaround / no workaround vvv
+        constant_wrapper<(_Ty::value >>= _Rty::value)>
+#endif // ^^^ no workaround ^^^
+    {
+        return {};
+    }
+};
+
+_EXPORT_STD template <auto _Val, class _Ty>
+struct constant_wrapper : _Cw_operators {
+    using type       = constant_wrapper;
+    using value_type = decltype(_Val);
+
+#if defined(__clang__) || defined(__EDG__) // TRANSITION, DevCom-11116911
+    static constexpr decltype(auto) value = (_Val);
+#else // ^^^ no workaround / workaround vvv
+    static constexpr conditional_t<is_scalar_v<value_type>, value_type, const value_type&> value = (_Val);
+#endif // ^^^ workaround ^^^
+
+    static_assert(is_same_v<_Ty, value_type>,
+        "constant_wrapper<V, T> requires T to be same as decay_t<decltype(V)> (N50XX [const.wrap.class]/2).");
+
+    template <_Constexpr_param _Rty>
+    _NODISCARD constexpr auto operator=(_Rty) const noexcept -> constant_wrapper<(value = _Rty::value)> {
+        return {};
+    }
+
+#if defined(__clang__) || defined(__EDG__) // TRANSITION, DevCom-11116935
+    _NODISCARD constexpr operator decltype(value)() const noexcept
+#else // ^^^ no workaround / workaround vvv
+    _NODISCARD constexpr operator remove_cv_t<decltype(value)>() const noexcept
+#endif // ^^^ workaround ^^^
+    {
+        return value;
+    }
+
+    template <class... _ArgTy>
+        requires (_Constexpr_param<remove_cvref_t<_ArgTy>> && ...)
+              && requires { typename constant_wrapper<_STD invoke(value, remove_cvref_t<_ArgTy>::value...)>; }
+    _NODISCARD static constexpr auto operator()(_ArgTy&&...) noexcept
+        -> constant_wrapper<_STD invoke(value, remove_cvref_t<_ArgTy>::value...)> {
+        return {};
+    }
+    template <class... _ArgTy>
+    static constexpr auto operator()(_ArgTy&&... _Args)
+        noexcept(noexcept(_STD invoke(value, _STD forward<_ArgTy>(_Args)...)))
+        /*-*/ -> decltype(_STD invoke(value, _STD forward<_ArgTy>(_Args)...)) {
+        /*------*/ return _STD invoke(value, _STD forward<_ArgTy>(_Args)...);
+    }
+
+    template <class... _ArgTy>
+        requires (_Constexpr_param<remove_cvref_t<_ArgTy>> && ...)
+              && requires { typename constant_wrapper<value[remove_cvref_t<_ArgTy>::value...]>; }
+    _NODISCARD static constexpr auto operator[](_ArgTy&&...) noexcept
+        -> constant_wrapper<value[remove_cvref_t<_ArgTy>::value...]> {
+        return {};
+    }
+    template <class... _ArgTy>
+    static constexpr auto operator[](_ArgTy&&... _Args) //
+        noexcept(noexcept(value[_STD forward<_ArgTy>(_Args)...]))
+        /*-*/ -> decltype(value[_STD forward<_ArgTy>(_Args)...]) {
+        /*------*/ return value[_STD forward<_ArgTy>(_Args)...];
+    }
+};
+
+_EXPORT_STD template <auto _Val>
+constexpr auto cw = constant_wrapper<_Val>{};
+#endif // _HAS_CXX26
 _STD_END
 
 // TRANSITION, non-_Ugly attribute tokens
